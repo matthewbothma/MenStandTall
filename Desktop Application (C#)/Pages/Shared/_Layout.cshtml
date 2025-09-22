@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Wilproject</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Wilproject.styles.css" asp-append-version="true" />
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background-color: #4B0082; /* purple */
+            min-height: 100vh; /* full height */
+            padding: 20px 10px;
+        }
+
+            .sidebar h4 {
+                color: white;
+                margin-bottom: 20px;
+            }
+
+            .sidebar a {
+                display: block;
+                color: white;
+                padding: 8px 12px;
+                text-decoration: none;
+                border-radius: 5px;
+                margin-bottom: 5px;
+                transition: background 0.3s;
+            }
+
+                .sidebar a:hover {
+                    background-color: #6c63ff; /* lighter purple */
+                }
+
+        /* Main content */
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        footer {
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <h4>Menu</h4>
+            <a href="@Url.Page("/Index")">Dashboard</a>
+            <a href="@Url.Page("/Projects")">Projects</a>
+            <a href="@Url.Page("/Calendar")">Calendar</a>
+            <a href="@Url.Page("/Tasks")">Tasks</a>
+            <a href="@Url.Page("/Messages")">Messages</a>
+            <a href="@Url.Page("/Report")">Report</a>
+        </nav>
+
+        <!-- Main content -->
+        <div class="content">
+            <main role="main" class="pb-3">
+                @RenderBody()
+            </main>
+
+            @* <footer class="border-top footer text-muted text-center p-2">
+                &copy; 2025 - Men Stand Tall - <a asp-area="" asp-page="/Privacy">Privacy</a>
+            </footer> *@
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

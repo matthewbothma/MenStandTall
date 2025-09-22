@@ -1,0 +1,112 @@
+﻿@page
+@model YourNamespace.Pages.ProjectsModel
+@{
+    ViewData["Title"] = "Projects";
+}
+@* <!--
+TODO (Backend):
+
+- When a new project is added, make sure it is saved to the database (using Entity Framework / ApplicationDbContext).
+- After saving, redirect back to the Projects page.
+- On the Projects page, load all projects from the database inside OnGet():
+
+    public void OnGet()
+    {
+        Projects = _context.Projects.ToList();
+    }
+
+- Bind the loaded Projects list to the UI so that each project appears as a card, for example:
+
+@foreach (var project in Model.Projects)
+{
+            <!-- display project info here -->
+} *@
+<div class="container mt-4">
+    <h2 class="text-center mb-4">🌍 NGO Projects Overview</h2>
+
+    <!-- Add Project Button -->
+    <div class="text-end mb-3">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+            <i class="bi bi-plus-circle"></i> Add New Project
+        </button>
+    </div>
+
+    <!-- Search + Filter -->
+    <div class="d-flex justify-content-between mb-3">
+        <input type="text" class="form-control w-50" placeholder="Search projects...">
+        <select class="form-select w-25">
+            <option>All</option>
+            <option>Active</option>
+            <option>Completed</option>
+            <option>Upcoming</option>
+        </select>
+    </div>
+    <script>
+        document.getElementById("statusFilter").addEventListener("change", function () {
+            let filterValue = this.value.toLowerCase();
+            let cards = document.querySelectorAll(".project-card");
+
+            cards.forEach(card => {
+                let status = card.getAttribute("data-status");
+                if (filterValue === "all" || status === filterValue) {
+                    card.style.display = "block";
+                } else {
+                    card.style.display = "none";
+                }
+            });
+        });
+    </script>
+
+    <!-- Projects Grid -->
+    <div class="row">
+        <!-- Example Project Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-lg border-0 rounded-3">
+                <div class="card-body">
+                    <h5 class="card-title">Education Program</h5>
+                    <p class="card-text text-muted">Building schools in rural areas.</p>
+                    <span class="badge bg-primary">Active</span>
+                    <p class="mt-2 mb-1">Progress:</p>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-success" style="width: 60%;">60%</div>
+                    </div>
+                    <p class="small text-muted">Due: 30 Aug 2025</p>
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-sm btn-outline-info">View</button>
+                        <button class="btn btn-sm btn-outline-warning">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Adding Project -->
+<div class="modal fade" id="addProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">Project Name</label>
+                        <input type="text" class="form-control" placeholder="Enter project name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Deadline</label>
+                        <input type="date" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="3" placeholder="Project details"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Add Project</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

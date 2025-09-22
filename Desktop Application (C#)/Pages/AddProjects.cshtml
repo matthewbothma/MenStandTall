@@ -1,0 +1,31 @@
+﻿@page
+@model AddProjectModel
+@{
+    ViewData["Title"] = "Add New Project";
+}
+
+<h2>Add New Project</h2>
+
+<form method="post">
+    <div class="form-group">
+        <label for="ProjectTitle">Project Title</label>
+        <input type="text" class="form-control" id="ProjectTitle" name="ProjectTitle" required />
+    </div>
+    <div class="form-group">
+        <label for="Description">Description</label>
+        <textarea class="form-control" id="Description" name="Description" rows="4" required></textarea>
+    </div>
+    <div class="form-group">
+        <label for="Goals">Goals</label>
+        <input type="text" class="form-control" id="Goals" name="Goals" required />
+    </div>
+    <div class="form-group">
+        <label for="Timeline">Timeline</label>
+        <input type="text" class="form-control" id="Timeline" name="Timeline" placeholder="e.g., 3 months" required />
+    </div>
+    <div class="form-group">
+        <label for="Progress">Initial Progress (%)</label>
+        <input type="number" class="form-control" id="Progress" name="Progress" min="0" max="100" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Add Project</button>
+</form>

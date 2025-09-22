@@ -1,0 +1,129 @@
+﻿@page
+@model Wilproject.Pages.TasksModel
+@{
+    ViewData["Title"] = "Task Board";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        body {
+            background-color: #f4f7fa;
+        }
+
+        .task-column {
+            min-height: 300px;
+            border: 1px dashed #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+
+        .draggable {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #e9ecef;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: move;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>@ViewData["Title"]</h1>
+        <div class="row">
+            <div class="col">
+                <h6>To Do</h6>
+                <div class="task-column" id="todo" ondrop="drop(event, 'To Do')" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="col">
+                <h6>Doing</h6>
+                <div class="task-column" id="doing" ondrop="drop(event, 'Doing')" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="col">
+                <h6>Done</h6>
+                <div class="task-column" id="done" ondrop="drop(event, 'Done')" ondragover="allowDrop(event)"></div>
+            </div>
+        </div>
+        <div class="mt-4">
+            <input type="text" id="newTaskInput" class="form-control" placeholder="Add new task..." />
+            <button class="btn btn-primary mt-2" onclick="addTask()">Add Task</button>
+        </div>
+    </div>
+
+    <script>
+        let tasks = [];
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.innerText);
+            ev.dataTransfer.setData("taskElement", ev.target.outerHTML);
+            ev.dataTransfer.setData("sourceColumn", ev.target.parentNode.id); // Get the source column
+        }
+
+        function drop(ev, status) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text");
+            const taskElementHTML = ev.dataTransfer.getData("taskElement");
+            const sourceColumn = ev.dataTransfer.getData("sourceColumn");
+
+            // Remove task from old status
+            tasks = tasks.filter(task => task.name !== data);
+
+            // Create a new task object with the new status
+            const newTask = { name: data, status };
+            tasks.push(newTask);
+
+            // Append the new task into the correct column
+            const targetColumn = document.getElementById(status.toLowerCase());
+            const newTaskElement = document.createElement('div');
+            newTaskElement.classList.add('draggable');
+            newTaskElement.setAttribute('draggable', 'true');
+            newTaskElement.setAttribute('ondragstart', 'drag(event)');
+            newTaskElement.innerHTML = data;
+            targetColumn.appendChild(newTaskElement);
+
+            // Remove the task from the source column
+            const sourceColumnElement = document.getElementById(sourceColumn);
+            const originalTask = Array.from(sourceColumnElement.children).find(child => child.innerText === data);
+            if (originalTask) {
+                sourceColumnElement.removeChild(originalTask);
+            }
+        }
+
+        function addTask() {
+            const taskInput = document.getElementById('newTaskInput');
+            const taskName = taskInput.value.trim();
+            if (taskName) {
+                // Create a new task object
+                const newTask = { name: taskName, status: 'To Do' };
+                tasks.push(newTask);
+
+                // Create a new task element
+                const newTaskElement = document.createElement('div');
+                newTaskElement.classList.add('draggable');
+                newTaskElement.setAttribute('draggable', 'true');
+                newTaskElement.setAttribute('ondragstart', 'drag(event)');
+                newTaskElement.innerText = taskName;
+
+                const todoColumn = document.getElementById('todo');
+                todoColumn.appendChild(newTaskElement);
+                taskInput.value = '';
+            }
+        }
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

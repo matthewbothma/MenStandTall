@@ -1,0 +1,89 @@
+﻿@* <!--
+TODO (Backend):
+
+- Connect this Messages section to the Messages page data.
+- When a user posts an announcement on the Messages page:
+    1. Save it to the database.
+    2. Fetch and display it here on the Dashboard automatically.
+- Ensure clicking "Post Announcement" redirects to the Messages page or opens a form,
+  and after posting, the new message should appear in this section without refreshing.
+--> *@
+
+@page
+@model Wilproject.Pages.MessagesModel
+@{
+    ViewData["Title"] = "Your Messages";
+}
+<div class="container mt-5">
+    <!-- Add New Message Card -->
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-gradient text-white rounded-top-4"
+             style="background: linear-gradient(90deg, #6a11cb, #2575fc);">
+            <h3 class="mb-0">Your Messages</h3>
+            <small>Add and manage your messages below</small>
+        </div>
+
+        <div class="card-body p-4">
+            <!-- Add New Message -->
+            <h5 class="mb-4">Add New Message</h5>
+
+            <form>
+                <!-- Title -->
+                <div class="form-floating mb-3">
+                    <input type="text" id="MessageTitle" class="form-control rounded-3 shadow-sm"
+                           placeholder="Message Title" required />
+                    <label for="MessageTitle">Title</label>
+                </div>
+
+                <!-- Content -->
+                <div class="form-floating mb-3">
+                    <textarea id="MessageContent" class="form-control rounded-3 shadow-sm"
+                              placeholder="Write your message here..." style="height: 150px;" required></textarea>
+                    <label for="MessageContent">Content</label>
+                </div>
+
+                <!-- Priority -->
+                <div class="form-floating mb-3">
+                    <select id="Priority" class="form-select rounded-3 shadow-sm">
+                        <option selected disabled>-- Select Priority --</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                    <label for="Priority">Priority</label>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-end">
+                    <button type="reset" class="btn btn-outline-secondary me-2 px-4 rounded-3">Clear</button>
+                    <button type="submit" class="btn btn-primary px-4 rounded-3 shadow">
+                        <i class="bi bi-send"></i> Add Message
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Messages List -->
+    <div class="card shadow-lg border-0 rounded-4 mt-4">
+        <div class="card-header bg-light rounded-top-4">
+            <h5 class="mb-0">Recent Messages</h5>
+        </div>
+        <div class="card-body">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Meeting Reminder</strong> - Don’t forget the team meeting tomorrow.
+                    </div>
+                    <span class="badge bg-danger">High</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Event Update</strong> - MenStandTall conference confirmed.
+                    </div>
+                    <span class="badge bg-success">Low</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
