@@ -1,3 +1,5 @@
+using Wilproject.Configuration;
+
 namespace Wilproject
 {
     public class Program
@@ -10,6 +12,10 @@ namespace Wilproject
             builder.Services.AddControllers();
             builder.Services.AddSignalR();
             builder.Services.AddRazorPages();
+            
+            // Register Firebase configuration
+            builder.Services.Configure<FirebaseConfig>(
+                builder.Configuration.GetSection("Firebase"));
 
             var app = builder.Build();
 

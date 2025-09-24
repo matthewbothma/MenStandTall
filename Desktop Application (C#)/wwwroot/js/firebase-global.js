@@ -10,16 +10,8 @@ if (typeof firebase === 'undefined') {
     console.log('? Firebase SDK is available');
 }
 
-// Single Firebase configuration
-window.firebaseConfig = {
-    apiKey: "AIzaSyCCCWM8JMsxsY28DrhxWje0MGsGYc9XLQo",
-    authDomain: "menstandtall-6779a.firebaseapp.com",
-    projectId: "menstandtall-6779a",
-    storageBucket: "menstandtall-6779a.firebasestorage.app",
-    messagingSenderId: "610463601364",
-    appId: "1:610463601364:web:396e8e0c8aacafe2716141",
-    measurementId: "G-XQCF3W12MX"
-};
+// Global Firebase configuration (will be loaded from server)
+window.firebaseConfig = null;
 
 // Global Firebase initialization function
 window.initializeGlobalFirebase = function() {
@@ -28,25 +20,79 @@ window.initializeGlobalFirebase = function() {
         return false;
     }
     
-    try {
-        // Only initialize if no app exists
-        if (!firebase.apps || firebase.apps.length === 0) {
-            firebase.initializeApp(window.firebaseConfig);
-            console.log('? Firebase initialized successfully');
-        } else {
-            console.log('? Firebase already initialized, using existing app');
-        }
-        
-        // Make auth and firestore globally available
-        window.firebaseAuth = firebase.auth();
-        window.firebaseDB = firebase.firestore ? firebase.firestore() : null;
-        
-        return true;
-    } catch (error) {
-        console.error('? Firebase initialization failed:', error);
-        return false;
-    }
+    // Fetch configuration from server
+    return fetch('/api/config/firebase')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch Firebase configuration');
+            }
+            return response.json();
+        })
+        .then(config => {
+            console.log('? Firebase configuration loaded from server');
+            window.firebaseConfig = config;
+            
+            try {
+                // Only initialize if no app exists
+                if (!firebase.apps || firebase.apps.length === 0) {
+                    firebase.initializeApp(window.firebaseConfig);
+                    console.log('? Firebase initialized successfully');
+                } else {
+                    console.log('? Firebase already initialized, using existing app');
+                }
+                
+                // Make auth and firestore globally available
+                window.firebaseAuth = firebase.auth();
+                window.firebaseDB = firebase.firestore ? firebase.firestore() : null;
+                
+                return true;
+            } catch (error) {
+                console.error('? Firebase initialization failed:', error);
+                return false;
+            }
+        })
+        .catch(error => {
+            console.error('? Failed to load Firebase configuration:', error);
+            // Fallback to environment variables if available (for development)
+            console.log('?? Attempting fallback configuration...');
+            return initializeFallbackFirebase();
+        });
 };
+
+// Fallback initialization for development (will be removed in production)
+function initializeFallbackFirebase() {
+    // This should only be used in development and will be removed
+    console.warn('?? Using fallback Firebase configuration - not recommended for production');
+    
+    // Check if development environment
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const fallbackConfig = {
+            apiKey: "FALLBACK_FOR_DEVELOPMENT_ONLY",
+            authDomain: "menstandtall-6779a.firebaseapp.com",
+            projectId: "menstandtall-6779a",
+            storageBucket: "menstandtall-6779a.firebasestorage.app",
+            messagingSenderId: "610463601364",
+            appId: "1:610463601364:web:396e8e0c8aacafe2716141",
+            measurementId: "G-XQCF3W12MX"
+        };
+        
+        try {
+            if (!firebase.apps || firebase.apps.length === 0) {
+                firebase.initializeApp(fallbackConfig);
+                console.log('? Firebase initialized with fallback config');
+            }
+            
+            window.firebaseAuth = firebase.auth();
+            window.firebaseDB = firebase.firestore ? firebase.firestore() : null;
+            return true;
+        } catch (error) {
+            console.error('? Fallback Firebase initialization failed:', error);
+            return false;
+        }
+    }
+    
+    return false;
+}
 
 // Global logout function
 window.globalLogout = function() {
@@ -79,9 +125,23 @@ window.globalLogout = function() {
 
 // Initialize Firebase when this script loads
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.initializeGlobalFirebase);
+    document.addEventListener('DOMContentLoaded', function() {
+        window.initializeGlobalFirebase().then(function(success) {
+            if (success) {
+                console.log('? Global Firebase initialization complete');
+            } else {
+                console.error('? Global Firebase initialization failed');
+            }
+        });
+    });
 } else {
-    window.initializeGlobalFirebase();
+    window.initializeGlobalFirebase().then(function(success) {
+        if (success) {
+            console.log('? Global Firebase initialization complete');
+        } else {
+            console.error('? Global Firebase initialization failed');
+        }
+    });
 }
 
 console.log('?? Global Firebase script loaded');
