@@ -116,6 +116,15 @@
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
+          <div class="d-flex justify-content-end align-items-center p-2">
+              <label for="taskFilter" class="mr-2 mb-0">Filter:</label>
+              <select id="taskFilter" class="form-control w-auto" onchange="renderAllTasksModal()">
+                  <option value="all">All</option>
+                  <option value="deleted">Deleted</option>
+                  <option value="ongoing">Ongoing</option>
+                  <option value="completed">Completed</option>
+              </select>
+          </div>
           <div class="modal-body" id="allTasksModalBody">
             <!-- Tasks will be rendered here -->
           </div>
@@ -396,16 +405,30 @@
             });
         }
 
+        // Update the renderAllTasksModal function to filter tasks
         function renderAllTasksModal() {
             const modalBody = document.getElementById('allTasksModalBody');
+            const filter = document.getElementById('taskFilter')?.value || 'all';
             modalBody.innerHTML = '';
             if (tasks.length === 0) {
                 modalBody.innerHTML = '<p>No tasks available.</p>';
                 return;
             }
+            let filteredTasks = tasks;
+            if (filter === 'deleted') {
+                filteredTasks = tasks.filter(task => task.status === 'Deleted');
+            } else if (filter === 'ongoing') {
+                filteredTasks = tasks.filter(task =>
+                    task.status === 'To Do' || task.status === 'Doing'
+                );
+            } else if (filter === 'completed') {
+                filteredTasks = tasks.filter(task =>
+                    task.status === 'Done' || task.status === 'View All Tasks'
+                );
+            }
             const list = document.createElement('ul');
             list.className = 'list-group';
-            tasks.forEach(task => {
+            filteredTasks.forEach(task => {
                 const item = document.createElement('li');
                 item.className = 'list-group-item d-flex flex-column align-items-start';
 
@@ -486,24 +509,4 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
-    if (task.status === 'Deleted') {
-        detailsDiv.innerHTML = `
-            <small>${task.description || ''}</small><br>
-            <span class="badge ${priorityClass}">${task.priority || ''}</span>
-            <div class="mt-1 text-danger font-weight-bold">Deleted</div>
-        `;
-    } else if (task.status === 'Done' || task.status === 'View All Tasks') {
-        detailsDiv.innerHTML = `
-            <small>${task.description || ''}</small><br>
-            <span class="badge ${priorityClass}">${task.priority || ''}</span>
-            <div class="mt-1 text-success font-weight-bold">Completed</div>
-        `;
-    } else {
-        detailsDiv.innerHTML = `
-            <small>${task.description || ''}</small><br>
-            <span class="badge ${priorityClass}">${task.priority || ''}</span>
-            ${task.dueDate ? `<span class="badge badge-light ml-2">Due: ${task.dueDate}</span>` : ''}
-            <div class="mt-1 text-warning font-weight-bold">Ongoing${task.dueDate ? ` - ${getDueCountdownText(task.dueDate)}` : ''}</div>
-        `;
-    }
 </html>
