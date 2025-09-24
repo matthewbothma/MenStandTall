@@ -15,7 +15,6 @@
         body {
             background-color: #f4f7fa;
         }
-
         .task-column {
             min-height: 300px;
             border: 1px dashed #ccc;
@@ -24,7 +23,6 @@
             border-radius: 5px;
             background-color: #fff;
         }
-
         .draggable {
             padding: 10px;
             margin: 5px 0;
@@ -32,6 +30,27 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             cursor: move;
+        }
+        .completed-task {
+            border: 2px solid #28a745 !important;
+            background-color: #eafbe7;
+        }
+        .deleted-task {
+            border: 2px solid #dc3545 !important;
+            background-color: #fbeaea;
+        }
+        .todo-task {
+            border: 2px solid #007bff !important;
+        }
+        .doing-task {
+            border: 2px solid #fd7e14 !important;
+        }
+        .done-task {
+            border: 2px solid #28a745 !important;
+        }
+        .active-task {
+            border: 2px solid #fd7e14 !important;
+            background-color: #fff7e6;
         }
     </style>
 </head>
@@ -53,17 +72,38 @@
             </div>
         </div>
         <div class="mt-4">
+            <button class="btn btn-primary mt-2" data-toggle="modal" data-target="#addTaskModal">Add Task</button>
+            <button class="btn btn-info mt-2 ml-2" data-toggle="modal" data-target="#viewAllTasksModal" onclick="renderAllTasksModal()">View All Tasks</button>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addTaskModalLabel">Add Task</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
             <input type="text" id="newTaskInput" class="form-control mb-2" placeholder="Task name..." />
             <textarea id="newTaskDesc" class="form-control mb-2" placeholder="Description..."></textarea>
-            <input type="date" id="newTaskDue" class="form-control mb-2" />
+            <input type="date" id="newTaskDue" class="form-control mb-2" onchange="updateDueCountdown()" />
+            <small id="dueCountdown" class="form-text text-muted mb-2"></small>
             <select id="newTaskPriority" class="form-control mb-2">
                 <option value="Low">Low Priority</option>
                 <option value="Medium">Medium Priority</option>
                 <option value="High">High Priority</option>
             </select>
-            <button class="btn btn-primary mt-2" onclick="addTask()">Add Task</button>
-            <button class="btn btn-info mt-2 ml-2" data-toggle="modal" data-target="#viewAllTasksModal" onclick="renderAllTasksModal()">View All Tasks</button>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button class="btn btn-primary" onclick="addTaskAndClose()">Add Task</button>
+          </div>
         </div>
+      </div>
     </div>
 
     <!-- Modal for viewing all tasks -->
@@ -76,6 +116,15 @@
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
+          <div class="d-flex justify-content-end align-items-center p-2">
+              <label for="taskFilter" class="mr-2 mb-0">Filter:</label>
+              <select id="taskFilter" class="form-control w-auto" onchange="renderAllTasksModal()">
+                  <option value="all">All</option>
+                  <option value="deleted">Deleted</option>
+                  <option value="ongoing">Ongoing</option>
+                  <option value="completed">Completed</option>
+              </select>
+          </div>
           <div class="modal-body" id="allTasksModalBody">
             <!-- Tasks will be rendered here -->
           </div>
@@ -83,9 +132,37 @@
       </div>
     </div>
 
+    <!-- JavaScript Section -->
     <script>
         let tasks = [];
 
+        // --- Helper Functions ---
+        function getDueCountdownText(dueDateStr) {
+            if (!dueDateStr) return '';
+            const today = new Date();
+            const dueDate = new Date(dueDateStr + 'T00:00:00');
+            today.setHours(0,0,0,0);
+            const diffTime = dueDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays > 1) {
+                return `${diffDays} days away`;
+            } else if (diffDays === 1) {
+                return `1 day away`;
+            } else if (diffDays === 0) {
+                return `Due today`;
+            } else {
+                return `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''}`;
+            }
+        }
+
+        function updateDueCountdown() {
+            const dueInput = document.getElementById('newTaskDue');
+            const countdown = document.getElementById('dueCountdown');
+            const dueDateStr = dueInput.value;
+            countdown.innerText = getDueCountdownText(dueDateStr);
+        }
+
+        // --- Task Board Functions ---
         function allowDrop(ev) {
             ev.preventDefault();
         }
@@ -100,26 +177,13 @@
             ev.preventDefault();
             const taskName = ev.dataTransfer.getData("text");
             const sourceColumn = ev.dataTransfer.getData("sourceColumn");
-
-            // Find the full task object
             const oldTask = tasks.find(task => task.name === taskName);
-
-            // Remove task from old status
             tasks = tasks.filter(task => task.name !== taskName);
-
-            // Create a new task object with the new status, preserving other info
-            const newTask = {
-                ...oldTask,
-                status: status
-            };
+            const newTask = { ...oldTask, status: status };
             tasks.push(newTask);
-
-            // Append the new task into the correct column
             const targetColumn = document.getElementById(status.toLowerCase().replace(/\s/g, ''));
             const newTaskElement = createTaskElement(newTask.name, newTask.status, newTask);
             targetColumn.appendChild(newTaskElement);
-
-            // Remove the task from the source column
             const sourceColumnElement = document.getElementById(sourceColumn);
             const originalTask = Array.from(sourceColumnElement.children).find(child => child.getAttribute('data-task-name') === taskName);
             if (originalTask) {
@@ -127,17 +191,20 @@
             }
         }
 
+        function addTaskAndClose() {
+            addTask();
+            $('#addTaskModal').modal('hide');
+        }
+
         function addTask() {
             const taskInput = document.getElementById('newTaskInput');
             const descInput = document.getElementById('newTaskDesc');
             const dueInput = document.getElementById('newTaskDue');
             const priorityInput = document.getElementById('newTaskPriority');
-
             const taskName = taskInput.value.trim();
             const description = descInput.value.trim();
             const dueDate = dueInput.value;
             const priority = priorityInput.value;
-
             if (taskName) {
                 const newTask = {
                     name: taskName,
@@ -147,11 +214,9 @@
                     status: 'To Do'
                 };
                 tasks.push(newTask);
-
                 const todoColumn = document.getElementById('todo');
                 const newTaskElement = createTaskElement(newTask.name, newTask.status, newTask);
                 todoColumn.appendChild(newTaskElement);
-
                 taskInput.value = '';
                 descInput.value = '';
                 dueInput.value = '';
@@ -162,13 +227,23 @@
         function createTaskElement(taskName, status, taskObj) {
             const taskDiv = document.createElement('div');
             taskDiv.classList.add('draggable', 'd-flex', 'justify-content-between', 'align-items-center', 'flex-column');
+            // Add status-based border color
+            if (status === 'To Do') {
+                taskDiv.classList.add('todo-task');
+            } else if (status === 'Doing') {
+                taskDiv.classList.add('doing-task');
+            } else if (status === 'Done') {
+                taskDiv.classList.add('done-task');
+            } else if (status === 'Deleted') {
+                taskDiv.classList.add('deleted-task');
+            }
             taskDiv.setAttribute('draggable', 'true');
             taskDiv.setAttribute('ondragstart', 'drag(event)');
             taskDiv.setAttribute('data-task-name', taskName);
             taskDiv.style.cursor = 'pointer';
 
             // Priority color
-            let priorityClass = 'badge-success'; // Low
+            let priorityClass = 'badge-success';
             if (taskObj?.priority === 'High') {
                 priorityClass = 'badge-danger';
             } else if (taskObj?.priority === 'Medium') {
@@ -182,7 +257,11 @@
             nameSpan.innerHTML = `<strong>${taskName}</strong>`;
             headerDiv.appendChild(nameSpan);
 
-            // Button
+            // Button group
+            const btnGroup = document.createElement('div');
+            btnGroup.className = 'btn-group';
+
+            // Action button (status change)
             const actionBtn = document.createElement('button');
             actionBtn.className = 'btn btn-sm ml-2';
 
@@ -216,17 +295,43 @@
                 };
             }
 
-            headerDiv.appendChild(actionBtn);
+            // Delete button (not for View All Tasks or Deleted)
+            if (status !== 'View All Tasks' && status !== 'Deleted') {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-danger btn-sm ml-2';
+                deleteBtn.innerText = 'Delete';
+                deleteBtn.onclick = function (e) {
+                    e.stopPropagation();
+                    deleteTask(taskName);
+                };
+                btnGroup.appendChild(deleteBtn);
+            }
+
+            // Only add actionBtn if not deleted
+            if (status !== 'Deleted') {
+                btnGroup.appendChild(actionBtn);
+            }
+
+            headerDiv.appendChild(btnGroup);
 
             // Details (hidden by default)
             const detailsDiv = document.createElement('div');
             detailsDiv.style.display = 'none';
             detailsDiv.classList.add('w-100', 'mt-2');
-            detailsDiv.innerHTML = `
-                <small>${taskObj?.description || ''}</small><br>
-                <span class="badge ${priorityClass}">${taskObj?.priority || ''}</span>
-                ${taskObj?.dueDate ? `<span class="badge badge-light ml-2">Due: ${taskObj.dueDate}</span>` : ''}
-            `;
+            if (status === 'Deleted') {
+                detailsDiv.innerHTML = `
+                    <small>${taskObj.description || ''}</small><br>
+                    <span class="badge ${priorityClass}">${taskObj.priority || ''}</span>
+                    <div class="mt-1 text-danger font-weight-bold">Deleted</div>
+                `;
+            } else {
+                detailsDiv.innerHTML = `
+                    <small>${taskObj.description || ''}</small><br>
+                    <span class="badge ${priorityClass}">${taskObj.priority || ''}</span>
+                    ${taskObj.dueDate ? `<span class="badge badge-light ml-2">Due: ${taskObj.dueDate}</span>` : ''}
+                    ${taskObj.dueDate ? `<div class="mt-1 text-muted">${getDueCountdownText(taskObj.dueDate)}</div>` : ''}
+                `;
+            }
 
             // Toggle details on click
             taskDiv.onclick = function () {
@@ -248,13 +353,11 @@
             return taskDiv;
         }
 
-        // Add this function for moving to "Doing"
         function moveTaskToDoing(taskName) {
             removeTaskFromAllColumns(taskName);
             const oldTask = tasks.find(task => task.name === taskName);
             tasks = tasks.filter(task => task.name !== taskName);
             tasks.push({ ...oldTask, status: 'Doing' });
-
             const doingColumn = document.getElementById('doing');
             const newTaskElement = createTaskElement(taskName, 'Doing', { ...oldTask, status: 'Doing' });
             doingColumn.appendChild(newTaskElement);
@@ -265,7 +368,6 @@
             const oldTask = tasks.find(task => task.name === taskName);
             tasks = tasks.filter(task => task.name !== taskName);
             tasks.push({ ...oldTask, status: 'Done' });
-
             const doneColumn = document.getElementById('done');
             const newTaskElement = createTaskElement(taskName, 'Done', { ...oldTask, status: 'Done' });
             doneColumn.appendChild(newTaskElement);
@@ -283,10 +385,16 @@
             const oldTask = tasks.find(task => task.name === taskName);
             tasks = tasks.filter(task => task.name !== taskName);
             tasks.push({ ...oldTask, status: 'To Do' });
-
             const todoColumn = document.getElementById('todo');
             const newTaskElement = createTaskElement(taskName, 'To Do', { ...oldTask, status: 'To Do' });
             todoColumn.appendChild(newTaskElement);
+        }
+
+        function deleteTask(taskName) {
+            removeTaskFromAllColumns(taskName);
+            const oldTask = tasks.find(task => task.name === taskName);
+            tasks = tasks.filter(task => task.name !== taskName);
+            tasks.push({ ...oldTask, status: 'Deleted' });
         }
 
         function removeTaskFromAllColumns(taskName) {
@@ -297,33 +405,105 @@
             });
         }
 
+        // Update the renderAllTasksModal function to filter tasks
         function renderAllTasksModal() {
             const modalBody = document.getElementById('allTasksModalBody');
+            const filter = document.getElementById('taskFilter')?.value || 'all';
             modalBody.innerHTML = '';
             if (tasks.length === 0) {
                 modalBody.innerHTML = '<p>No tasks available.</p>';
                 return;
             }
+            let filteredTasks = tasks;
+            if (filter === 'deleted') {
+                filteredTasks = tasks.filter(task => task.status === 'Deleted');
+            } else if (filter === 'ongoing') {
+                filteredTasks = tasks.filter(task =>
+                    task.status === 'To Do' || task.status === 'Doing'
+                );
+            } else if (filter === 'completed') {
+                filteredTasks = tasks.filter(task =>
+                    task.status === 'Done' || task.status === 'View All Tasks'
+                );
+            }
             const list = document.createElement('ul');
             list.className = 'list-group';
-            tasks.forEach(task => {
+            filteredTasks.forEach(task => {
                 const item = document.createElement('li');
-                item.className = 'list-group-item d-flex justify-content-between align-items-center';
-                item.innerText = task.name; // <-- Only show the name
+                item.className = 'list-group-item d-flex flex-column align-items-start';
+
+                // Orange for active (not done, not deleted, not archived)
+                if (
+                    task.status !== 'Done' &&
+                    task.status !== 'View All Tasks' &&
+                    task.status !== 'Deleted'
+                ) {
+                    item.classList.add('active-task');
+                }
+                if (task.status === 'Done' || task.status === 'View All Tasks') {
+                    item.classList.add('completed-task');
+                }
+                if (task.status === 'Deleted') {
+                    item.classList.add('deleted-task');
+                }
+
+                const row = document.createElement('div');
+                row.className = 'd-flex w-100 justify-content-between align-items-center';
+                row.style.cursor = 'pointer';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.innerHTML = `<strong>${task.name}</strong>`;
+                row.appendChild(nameSpan);
+
                 if (task.status === 'View All Tasks') {
                     const restoreBtn = document.createElement('button');
                     restoreBtn.className = 'btn btn-secondary btn-sm';
                     restoreBtn.innerText = 'Restore';
-                    restoreBtn.onclick = function () {
+                    restoreBtn.onclick = function (e) {
+                        e.stopPropagation();
                         moveTaskToTodo(task.name);
                         $('#viewAllTasksModal').modal('hide');
                     };
-                    item.appendChild(restoreBtn);
+                    row.appendChild(restoreBtn);
                 }
+
+                const detailsDiv = document.createElement('div');
+                detailsDiv.style.display = 'none';
+                detailsDiv.className = 'mt-2 w-100';
+                let priorityClass = 'badge-success';
+                if (task.priority === 'High') priorityClass = 'badge-danger';
+                else if (task.priority === 'Medium') priorityClass = 'badge-warning';
+
+                if (task.status === 'Deleted') {
+                    detailsDiv.innerHTML = `
+                        <small>${task.description || ''}</small><br>
+                        <span class="badge ${priorityClass}">${task.priority || ''}</span>
+                        <div class="mt-1 text-danger font-weight-bold">Deleted</div>
+                    `;
+                } else {
+                    detailsDiv.innerHTML = `
+                        <small>${task.description || ''}</small><br>
+                        <span class="badge ${priorityClass}">${task.priority || ''}</span>
+                        ${task.dueDate ? `<span class="badge badge-light ml-2">Due: ${task.dueDate}</span>` : ''}
+                        ${task.dueDate ? `<div class="mt-1 text-muted">${getDueCountdownText(task.dueDate)}</div>` : ''}
+                    `;
+                }
+
+                row.onclick = function () {
+                    detailsDiv.style.display = detailsDiv.style.display === 'none' ? 'block' : 'none';
+                };
+
+                item.appendChild(row);
+                item.appendChild(detailsDiv);
                 list.appendChild(item);
             });
             modalBody.appendChild(list);
         }
+
+        // Update countdown on modal open
+        $('#addTaskModal').on('shown.bs.modal', function () {
+            updateDueCountdown();
+        });
     </script>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
