@@ -1,0 +1,242 @@
+@page
+@model Wilproject.Pages.DashboardModel
+@{
+    ViewData["Title"] = "Dashboard - Men Stand Tall";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>Dashboard</h1>
+            <span id="dashboard-user-info" class="text-muted">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Top Row: Project Overview + Messages -->
+    <div class="row">
+        <!-- Project Overview -->
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Project Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Donut Chart -->
+                        <div class="col-md-6">
+                            <canvas id="projectDonut" width="200" height="200"></canvas>
+                        </div>
+                        <!-- Progress Bars -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6>Project A <span class="float-right">70%</span></h6>
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" style="width:70%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <h6>Project B <span class="float-right">45%</span></h6>
+                                <div class="progress">
+                                    <div class="progress-bar bg-warning" style="width:45%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h6>Project C <span class="float-right">90%</span></h6>
+                                <div class="progress">
+                                    <div class="progress-bar bg-info" style="width:90%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Total Projects</h6>
+                        <h3 class="text-primary">12</h3>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Active Tasks</h6>
+                        <h3 class="text-warning">24</h3>
+                    </div>
+                    <div>
+                        <h6>Completed This Month</h6>
+                        <h3 class="text-success">8</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Recent Activity + Calendar -->
+    <div class="row mt-4">
+        <!-- Recent Activity -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <span class="badge badge-success">Project</span> Education Program updated
+                            <small class="text-muted d-block">2 hours ago</small>
+                        </li>
+                        <li class="mb-2">
+                            <span class="badge badge-info">Task</span> New task assigned to Team A
+                            <small class="text-muted d-block">4 hours ago</small>
+                        </li>
+                        <li class="mb-2">
+                            <span class="badge badge-warning">Event</span> Monthly meeting scheduled
+                            <small class="text-muted d-block">1 day ago</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Upcoming Events</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Jan 15</strong> - Team Workshop
+                        <span class="badge badge-primary ml-2">Workshop</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Jan 22</strong> - Project Review
+                        <span class="badge badge-info ml-2">Meeting</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Jan 28</strong> - Community Event
+                        <span class="badge badge-success ml-2">Event</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    console.log('?? Dashboard script starting...');
+    
+    var currentUser = null;
+    
+    // Wait for global Firebase to be ready
+    function waitForDashboardFirebase(callback) {
+        if (window.firebaseAuth) {
+            callback();
+        } else {
+            setTimeout(function() { waitForDashboardFirebase(callback); }, 100);
+        }
+    }
+    
+    // Setup dashboard-specific functionality
+    function setupDashboard() {
+        console.log('?? Setting up dashboard');
+        
+        if (!window.firebaseAuth) {
+            console.error('? Firebase auth not available in dashboard');
+            return;
+        }
+        
+        // Authentication check for dashboard
+        window.firebaseAuth.onAuthStateChanged(function(user) {
+            if (!user) {
+                console.log('? No user in dashboard, redirecting');
+                window.location.href = '/';
+            } else {
+                currentUser = user;
+                
+                // Update dashboard user info (main content)
+                var dashboardUserInfoElement = document.getElementById('dashboard-user-info');
+                if (dashboardUserInfoElement) {
+                    var displayName = user.displayName || user.email || 'User';
+                    var emailSymbol = String.fromCharCode(64);
+                    var atIndex = displayName.indexOf(emailSymbol);
+                    if (atIndex > -1) {
+                        displayName = displayName.substring(0, atIndex);
+                    }
+                    dashboardUserInfoElement.textContent = 'Welcome back, ' + displayName + '!';
+                }
+                
+                // Force update sidebar welcome (since this is dashboard)
+                var sidebarUserInfoElement = document.getElementById('sidebar-user-info');
+                if (sidebarUserInfoElement) {
+                    var displayName = user.displayName || user.email || 'User';
+                    var emailSymbol = String.fromCharCode(64);
+                    var atIndex = displayName.indexOf(emailSymbol);
+                    if (atIndex > -1) {
+                        displayName = displayName.substring(0, atIndex);
+                    }
+                    sidebarUserInfoElement.textContent = 'Welcome, ' + displayName;
+                    sidebarUserInfoElement.style.display = 'block';
+                    console.log('? Dashboard sidebar welcome updated');
+                }
+                
+                console.log('? Dashboard user set:', user.email);
+            }
+        });
+    }
+    
+    // Initialize charts
+    function initializeCharts() {
+        console.log('?? Initializing charts');
+        
+        var ctx = document.getElementById('projectDonut');
+        if (ctx) {
+            new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'In Progress', 'Planning'],
+                    datasets: [{
+                        data: [40, 35, 25],
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(23, 162, 184, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(40, 167, 69, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(23, 162, 184, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            console.log('? Charts initialized');
+        }
+    }
+    
+    // Initialize everything when Firebase is ready
+    waitForDashboardFirebase(function() {
+        console.log('? Firebase ready for dashboard');
+        setupDashboard();
+        initializeCharts();
+        console.log('? Dashboard setup complete');
+    });
+    
+    console.log('?? Dashboard script loaded');
+</script>

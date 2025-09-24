@@ -15,8 +15,6 @@ BACKEND NOTE:
 
 @page
 @model Wilproject.Pages.ReportModel
-
-
 @{
     ViewData["Title"] = "Add New Report";
 }
@@ -25,7 +23,7 @@ BACKEND NOTE:
     <div class="card shadow-lg border-0 rounded-4">
         <div class="card-header bg-gradient text-white rounded-top-4"
              style="background: linear-gradient(90deg, #4b6cb7, #182848);">
-            <h3 class="mb-0"> Add New Report</h3>
+            <h3 class="mb-0">Add New Report</h3>
             <small>Fill in the details below to create a new report for MenStandTall</small>
         </div>
 
@@ -34,43 +32,43 @@ BACKEND NOTE:
                 <!-- Report Title -->
                 <div class="form-floating mb-3">
                     <input type="text" id="Title" class="form-control rounded-3" placeholder="Report Title" />
-                    <label for="Title"> Report Title</label>
+                    <label for="Title">Report Title</label>
                 </div>
 
                 <!-- Description -->
                 <div class="form-floating mb-3">
                     <textarea id="Description" class="form-control rounded-3" placeholder="Description" style="height: 120px;"></textarea>
-                    <label for="Description"> Description</label>
+                    <label for="Description">Description</label>
                 </div>
 
                 <!-- Date -->
                 <div class="form-floating mb-3">
                     <input type="date" id="Date" class="form-control rounded-3" />
-                    <label for="Date"> Date</label>
+                    <label for="Date">Date</label>
                 </div>
 
                 <!-- Category -->
                 <div class="form-floating mb-3">
                     <select id="Category" class="form-select rounded-3">
                         <option selected disabled>-- Choose Category --</option>
-                        <option value="Impact"> Impact</option>
-                        <option value="Finance"> Finance</option>
-                        <option value="Event"> Event</option>
-                        <option value="Other"> Other</option>
+                        <option value="Impact">Impact</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Event">Event</option>
+                        <option value="Other">Other</option>
                     </select>
-                    <label for="Category"> Category</label>
+                    <label for="Category">Category</label>
                 </div>
 
                 <!-- File Upload -->
                 <div class="mb-4">
-                    <label for="File" class="form-label fw-bold"> Upload Report (PDF)</label>
+                    <label for="File" class="form-label fw-bold">Upload Report (PDF)</label>
                     <input type="file" id="File" class="form-control rounded-3" />
                 </div>
 
                 <!-- Buttons -->
                 <div class="d-flex justify-content-end">
                     <button type="reset" class="btn btn-outline-secondary me-2 px-4 rounded-3">Clear</button>
-                    <button type="button" class="btn btn-success px-4 rounded-3 shadow">
+                    <button type="submit" class="btn btn-success px-4 rounded-3 shadow">
                         <i class="bi bi-save"></i> Save Report
                     </button>
                 </div>
@@ -78,3 +76,75 @@ BACKEND NOTE:
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        console.log('📊 Reports script starting...');
+        
+        // Wait for global Firebase to be ready
+        function waitForReportsFirebase(callback) {
+            if (window.firebaseAuth) {
+                callback();
+            } else {
+                setTimeout(function() { waitForReportsFirebase(callback); }, 100);
+            }
+        }
+        
+        // Setup reports-specific functionality
+        function setupReports() {
+            console.log('📊 Setting up reports');
+            
+            if (!window.firebaseAuth) {
+                console.error('❌ Firebase auth not available in reports');
+                return;
+            }
+            
+            // Authentication check for reports
+            window.firebaseAuth.onAuthStateChanged(function(user) {
+                if (!user) {
+                    console.log('❌ No user in reports, redirecting');
+                    window.location.href = '/';
+                } else {
+                    console.log('✅ Reports user authenticated:', user.email);
+                    setupReportHandlers();
+                }
+            });
+        }
+        
+        // Setup report form handlers
+        function setupReportHandlers() {
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const title = document.getElementById('Title').value.trim();
+                    const description = document.getElementById('Description').value.trim();
+                    const date = document.getElementById('Date').value;
+                    const category = document.getElementById('Category').value;
+                    const file = document.getElementById('File').files[0];
+                    
+                    if (title && description && date && category) {
+                        console.log('📄 Saving report:', { title, description, date, category, file: file ? file.name : 'none' });
+                        // TODO: Implement report saving to Firebase/database
+                        alert('Report functionality will be implemented with backend database.');
+                        
+                        // Clear form
+                        form.reset();
+                    } else {
+                        alert('Please fill in all required fields.');
+                    }
+                });
+            }
+        }
+        
+        // Initialize everything when Firebase is ready
+        waitForReportsFirebase(function() {
+            console.log('✅ Firebase ready for reports');
+            setupReports();
+            console.log('✅ Reports setup complete');
+        });
+        
+        console.log('📊 Reports script loaded');
+    </script>
+}

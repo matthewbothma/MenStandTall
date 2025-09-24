@@ -12,20 +12,21 @@ TODO (Backend):
 @page
 @model Wilproject.Pages.MessagesModel
 @{
-    ViewData["Title"] = "Your Messages";
+    ViewData["Title"] = "Messages";
 }
+
 <div class="container mt-5">
     <!-- Add New Message Card -->
     <div class="card shadow-lg border-0 rounded-4">
         <div class="card-header bg-gradient text-white rounded-top-4"
              style="background: linear-gradient(90deg, #6a11cb, #2575fc);">
-            <h3 class="mb-0">Your Messages</h3>
-            <small>Add and manage your messages below</small>
+            <h3 class="mb-0">Messages</h3>
+            <small>Manage your messages and announcements</small>
         </div>
 
         <div class="card-body p-4">
             <!-- Add New Message -->
-            <h5 class="mb-4">Add New Message</h5>
+            <h5 class="mb-4">Create New Message</h5>
 
             <form>
                 <!-- Title -->
@@ -57,7 +58,7 @@ TODO (Backend):
                 <div class="d-flex justify-content-end">
                     <button type="reset" class="btn btn-outline-secondary me-2 px-4 rounded-3">Clear</button>
                     <button type="submit" class="btn btn-primary px-4 rounded-3 shadow">
-                        <i class="bi bi-send"></i> Add Message
+                        <i class="bi bi-send"></i> Send Message
                     </button>
                 </div>
             </form>
@@ -73,7 +74,7 @@ TODO (Backend):
             <ul class="list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
-                        <strong>Meeting Reminder</strong> - Don’t forget the team meeting tomorrow.
+                        <strong>Meeting Reminder</strong> - Don't forget the team meeting tomorrow.
                     </div>
                     <span class="badge bg-danger">High</span>
                 </li>
@@ -83,7 +84,83 @@ TODO (Backend):
                     </div>
                     <span class="badge bg-success">Low</span>
                 </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Project Update</strong> - Weekly progress report available.
+                    </div>
+                    <span class="badge bg-warning">Medium</span>
+                </li>
             </ul>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        console.log('💬 Messages script starting...');
+        
+        // Wait for global Firebase to be ready
+        function waitForMessagesFirebase(callback) {
+            if (window.firebaseAuth) {
+                callback();
+            } else {
+                setTimeout(function() { waitForMessagesFirebase(callback); }, 100);
+            }
+        }
+        
+        // Setup messages-specific functionality
+        function setupMessages() {
+            console.log('💬 Setting up messages');
+            
+            if (!window.firebaseAuth) {
+                console.error('❌ Firebase auth not available in messages');
+                return;
+            }
+            
+            // Authentication check for messages
+            window.firebaseAuth.onAuthStateChanged(function(user) {
+                if (!user) {
+                    console.log('❌ No user in messages, redirecting');
+                    window.location.href = '/';
+                } else {
+                    console.log('✅ Messages user authenticated:', user.email);
+                    setupMessageHandlers();
+                }
+            });
+        }
+        
+        // Setup message form handlers
+        function setupMessageHandlers() {
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const title = document.getElementById('MessageTitle').value.trim();
+                    const content = document.getElementById('MessageContent').value.trim();
+                    const priority = document.getElementById('Priority').value;
+                    
+                    if (title && content && priority) {
+                        console.log('📧 Sending message:', { title, content, priority });
+                        // TODO: Implement message sending to Firebase/database
+                        alert('Message functionality will be implemented with backend database.');
+                        
+                        // Clear form
+                        form.reset();
+                    } else {
+                        alert('Please fill in all fields.');
+                    }
+                });
+            }
+        }
+        
+        // Initialize everything when Firebase is ready
+        waitForMessagesFirebase(function() {
+            console.log('✅ Firebase ready for messages');
+            setupMessages();
+            console.log('✅ Messages setup complete');
+        });
+        
+        console.log('💬 Messages script loaded');
+    </script>
+}

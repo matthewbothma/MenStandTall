@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Wilproject</title>
+    <title>@ViewData["Title"] - Men Stand Tall</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Wilproject.styles.css" asp-append-version="true" />
@@ -13,69 +13,217 @@
             font-family: Arial, sans-serif;
             background-color: #f8f9fa;
         }
-
-        /* Sidebar */
         .sidebar {
             width: 220px;
-            background-color: #4B0082; /* purple */
-            min-height: 100vh; /* full height */
+            background-color: #4B0082;
+            min-height: 100vh;
             padding: 20px 10px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
         }
-
-            .sidebar h4 {
-                color: white;
-                margin-bottom: 20px;
-            }
-
-            .sidebar a {
-                display: block;
-                color: white;
-                padding: 8px 12px;
-                text-decoration: none;
-                border-radius: 5px;
-                margin-bottom: 5px;
-                transition: background 0.3s;
-            }
-
-                .sidebar a:hover {
-                    background-color: #6c63ff; /* lighter purple */
-                }
-
-        /* Main content */
+        .sidebar h4 {
+            color: white;
+            margin-bottom: 20px;
+        }
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 8px 12px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            transition: background 0.3s;
+        }
+        .sidebar a:hover {
+            background-color: #6c63ff;
+        }
         .content {
-            flex-grow: 1;
+            margin-left: 220px;
             padding: 20px;
+            min-height: 100vh;
         }
-
-        footer {
-            background: #f8f9fa;
+        .sidebar .logout-section {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            right: 10px;
+        }
+        .user-info {
+            color: white;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            padding: 6px 10px;
+            border-radius: 5px;
+            background-color: rgba(255,255,255,0.1);
+            text-align: center;
+            display: none; /* Hidden by default */
+        }
+        .logout-btn {
+            width: 100%;
+            background: #dc3545;
+            border: 1px solid #dc3545;
+            color: white;
+            font-weight: 500;
+        }
+        .logout-btn:hover {
+            background: #c82333;
+            border-color: #c82333;
+            color: white;
         }
     </style>
 </head>
 <body>
     <div class="d-flex">
-        <!-- Sidebar -->
-        <nav class="sidebar">
-            <h4>Menu</h4>
-            <a href="@Url.Page("/Index")">Dashboard</a>
-            <a href="@Url.Page("/Projects")">Projects</a>
-            <a href="@Url.Page("/Calendar")">Calendar</a>
-            <a href="@Url.Page("/Tasks")">Tasks</a>
-            <a href="@Url.Page("/Messages")">Messages</a>
-            <a href="@Url.Page("/Report")">Report</a>
+        <nav class="sidebar d-flex flex-column">
+            <div>
+                <h4>Navigation</h4>
+                <div id="sidebar-user-info" class="user-info">Loading...</div>
+                <a href="@Url.Page("/Dashboard")">Dashboard</a>
+                <a href="@Url.Page("/Projects")">Projects</a>
+                <a href="@Url.Page("/Calendar")">Calendar</a>
+                <a href="@Url.Page("/Tasks")">Tasks</a>
+                <a href="@Url.Page("/Messages")">Messages</a>
+                <a href="@Url.Page("/Report")">Reports</a>
+            </div>
+            <div class="logout-section">
+                <button class="btn logout-btn" id="sidebar-logout-btn">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </div>
         </nav>
-
-        <!-- Main content -->
         <div class="content">
             <main role="main" class="pb-3">
                 @RenderBody()
             </main>
-
-            @* <footer class="border-top footer text-muted text-center p-2">
-                &copy; 2025 - Men Stand Tall - <a asp-area="" asp-page="/Privacy">Privacy</a>
-            </footer> *@
         </div>
     </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    
+    <!-- Global Firebase Configuration -->
+    <script src="~/js/firebase-global.js"></script>
+    
+    <script>
+        console.log('🎯 Layout script starting...');
+        
+        var currentUser = null;
+        
+        // Check if current page is Dashboard
+        function isDashboardPage() {
+            var path = window.location.pathname.toLowerCase();
+            return path === '/dashboard' || path === '/';
+        }
+        
+        // Wait for global Firebase to be ready
+        function waitForFirebase(callback) {
+            if (window.firebaseAuth) {
+                callback();
+            } else {
+                setTimeout(function() { waitForFirebase(callback); }, 100);
+            }
+        }
+        
+        // Setup authentication monitoring
+        function setupAuth() {
+            console.log('🔐 Setting up authentication monitoring');
+            
+            if (!window.firebaseAuth) {
+                console.error('❌ Firebase auth not available');
+                return;
+            }
+            
+            window.firebaseAuth.onAuthStateChanged(function(user) {
+                console.log('🔄 Auth state changed:', user ? user.email : 'No user');
+                currentUser = user;
+                
+                if (!user && window.location.pathname !== '/') {
+                    console.log('❌ No user, redirecting to login');
+                    window.location.href = '/';
+                } else if (user) {
+                    // Only show user info on dashboard
+                    if (isDashboardPage()) {
+                        updateUserDisplay(user);
+                    } else {
+                        hideUserDisplay();
+                    }
+                }
+            });
+        }
+        
+        // Update user display in sidebar (only for dashboard)
+        function updateUserDisplay(user) {
+            var userInfoDiv = document.getElementById('sidebar-user-info');
+            if (userInfoDiv && user) {
+                var displayName = user.displayName || user.email || 'User';
+                var emailSymbol = String.fromCharCode(64);
+                var atIndex = displayName.indexOf(emailSymbol);
+                if (atIndex > -1) {
+                    displayName = displayName.substring(0, atIndex);
+                }
+                userInfoDiv.textContent = 'Welcome, ' + displayName;
+                userInfoDiv.style.display = 'block';
+                console.log('✅ User display updated for:', displayName);
+            }
+        }
+        
+        // Hide user display (for non-dashboard pages)
+        function hideUserDisplay() {
+            var userInfoDiv = document.getElementById('sidebar-user-info');
+            if (userInfoDiv) {
+                userInfoDiv.style.display = 'none';
+                console.log('✅ User display hidden');
+            }
+        }
+        
+        // Setup logout button
+        function setupLogout() {
+            console.log('🚪 Setting up logout button');
+            
+            var logoutBtn = document.getElementById('sidebar-logout-btn');
+            
+            if (!logoutBtn) {
+                console.error('❌ Logout button not found!');
+                return;
+            }
+            
+            logoutBtn.onclick = function() {
+                console.log('🚪 Logout button clicked!');
+                
+                // Use the global logout function
+                if (window.globalLogout) {
+                    window.globalLogout();
+                } else {
+                    console.error('❌ Global logout function not available');
+                    // Fallback
+                    window.location.href = '/';
+                }
+                
+                return false;
+            };
+            
+            console.log('✅ Logout button setup complete');
+        }
+        
+        // Initialize everything when Firebase is ready
+        waitForFirebase(function() {
+            console.log('✅ Firebase is ready, setting up layout functionality');
+            setupAuth();
+            setupLogout();
+            console.log('✅ Layout setup complete');
+        });
+        
+        // Also setup logout immediately (fallback)
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(setupLogout, 1000);
+        });
+        
+        console.log('🎯 Layout script loaded');
+    </script>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

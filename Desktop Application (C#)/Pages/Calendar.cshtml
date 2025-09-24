@@ -1,122 +1,192 @@
 ﻿@page
 @model Wilgproject.Pages.CalendarModel
-
 @{
     ViewData["Title"] = "Calendar";
 }
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Calendar</title>
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <style>
-        body {
-            margin: 20px;
-            font-family: Arial, sans-serif;
-            background: #f8f9fa;
-        }
+<style>
+    .calendar-container {
+        margin: 20px 0;
+    }
 
-        #calendar {
-            max-width: 900px;
-            margin: auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
-        }
+    #calendar {
+        max-width: 900px;
+        margin: auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+    }
 
-        .modal-header {
-            color: white;
-        }
+    .modal-header {
+        color: white;
+    }
 
-        .add-header {
-            background-color: #198754; /* green */
-        }
+    .add-header {
+        background-color: #198754; /* green */
+    }
 
-        .edit-header {
-            background-color: #0d6efd; /* blue */
-        }
+    .edit-header {
+        background-color: #0d6efd; /* blue */
+    }
 
-        .delete-header {
-            background-color: #dc3545; /* red */
-        }
-    </style>
-</head>
-<body>
+    .delete-header {
+        background-color: #dc3545; /* red */
+    }
+    
+    /* Ensure logout button has consistent red styling */
+    #sidebar-logout-btn {
+        background: #dc3545 !important;
+        border: 1px solid #dc3545 !important;
+        color: white !important;
+        font-weight: 500 !important;
+        width: 100% !important;
+    }
+    
+    #sidebar-logout-btn:hover {
+        background: #c82333 !important;
+        border-color: #c82333 !important;
+        color: white !important;
+    }
+    
+    /* Override any Bootstrap conflicts */
+    .sidebar .logout-btn {
+        background: #dc3545 !important;
+        border: 1px solid #dc3545 !important;
+        color: white !important;
+    }
+    
+    .sidebar .logout-btn:hover {
+        background: #c82333 !important;
+        border-color: #c82333 !important;
+        color: white !important;
+    }
+</style>
+
+<div class="calendar-container">
     <h2 class="text-center mb-4">Calendar</h2>
     <div id="calendar"></div>
+</div>
 
-    <!-- Add Event Modal -->
-    <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-3 shadow">
-                <div class="modal-header add-header">
-                    <h5 class="modal-title">Add New Event</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" id="eventTitle" class="form-control" placeholder="Enter event title..." />
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-success" id="saveEventBtn">Add Event</button>
-                </div>
+<!-- Add Event Modal -->
+<div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3 shadow">
+            <div class="modal-header add-header">
+                <h5 class="modal-title">Add New Event</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="eventTitle" class="form-control" placeholder="Enter event title..." />
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-success" id="saveEventBtn">Add Event</button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Edit Event Modal -->
-    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-3 shadow">
-                <div class="modal-header edit-header">
-                    <h5 class="modal-title">Edit Event</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" id="editEventTitle" class="form-control" />
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-danger" id="deleteFromEditBtn">Delete</button>
-                    <button class="btn btn-primary" id="updateEventBtn">Save Changes</button>
-                </div>
+<!-- Edit Event Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3 shadow">
+            <div class="modal-header edit-header">
+                <h5 class="modal-title">Edit Event</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="editEventTitle" class="form-control" />
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-danger" id="deleteFromEditBtn">Delete</button>
+                <button class="btn btn-primary" id="updateEventBtn">Save Changes</button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-3 shadow">
-                <div class="modal-header delete-header">
-                    <h5 class="modal-title">Delete Event</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    Are you sure you want to delete this event?
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
-                </div>
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3 shadow">
+            <div class="modal-header delete-header">
+                <h5 class="modal-title">Delete Event</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this event?
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
             </div>
         </div>
     </div>
+</div>
 
+@section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        console.log('📅 Calendar script starting...');
+        
+        // Wait for global Firebase to be ready
+        function waitForCalendarFirebase(callback) {
+            if (window.firebaseAuth) {
+                callback();
+            } else {
+                setTimeout(function() { waitForCalendarFirebase(callback); }, 100);
+            }
+        }
+        
+        // Setup calendar-specific functionality
+        function setupCalendar() {
+            console.log('📅 Setting up calendar');
+            
+            if (!window.firebaseAuth) {
+                console.error('❌ Firebase auth not available in calendar');
+                return;
+            }
+            
+            // Authentication check for calendar
+            window.firebaseAuth.onAuthStateChanged(function(user) {
+                if (!user) {
+                    console.log('❌ No user in calendar, redirecting');
+                    window.location.href = '/';
+                } else {
+                    console.log('✅ Calendar user authenticated:', user.email);
+                    initializeCalendar();
+                    
+                    // Ensure logout button styling after auth
+                    setTimeout(function() {
+                        var logoutBtn = document.getElementById('sidebar-logout-btn');
+                        if (logoutBtn) {
+                            logoutBtn.style.background = '#dc3545';
+                            logoutBtn.style.borderColor = '#dc3545';
+                            logoutBtn.style.color = 'white';
+                            console.log('✅ Logout button styling applied');
+                        }
+                    }, 1000);
+                }
+            });
+        }
+        
+        // Initialize FullCalendar
+        function initializeCalendar() {
+            console.log('📅 Initializing FullCalendar');
+            
             var calendarEl = document.getElementById('calendar');
             var selectedInfo = null;
             var selectedEvent = null;
+
+            if (!calendarEl) {
+                console.error('❌ Calendar element not found');
+                return;
+            }
 
             var calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
@@ -139,8 +209,16 @@
                     editModal.show();
                 }
             });
+            
             calendar.render();
+            console.log('✅ FullCalendar initialized');
 
+            // Event handlers
+            setupEventHandlers(calendar, selectedInfo, selectedEvent);
+        }
+        
+        // Setup event handlers
+        function setupEventHandlers(calendar, selectedInfo, selectedEvent) {
             // Save Event
             document.getElementById("saveEventBtn").addEventListener("click", function () {
                 var title = document.getElementById("eventTitle").value;
@@ -169,7 +247,7 @@
                 modal.hide();
             });
 
-            // Delete from Edit Modal → open delete confirmation
+            // Delete from Edit Modal
             document.getElementById("deleteFromEditBtn").addEventListener("click", function () {
                 var editModal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
                 editModal.hide();
@@ -186,7 +264,15 @@
                 var modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
                 modal.hide();
             });
+        }
+        
+        // Initialize everything when Firebase is ready
+        waitForCalendarFirebase(function() {
+            console.log('✅ Firebase ready for calendar');
+            setupCalendar();
+            console.log('✅ Calendar setup complete');
         });
+        
+        console.log('📅 Calendar script loaded');
     </script>
-</body>
-</html>
+}
