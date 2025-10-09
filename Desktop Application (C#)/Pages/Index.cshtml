@@ -7,83 +7,105 @@
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>@ViewData["Title"]</title>
-    <style>
-        body {
-            background: linear-gradient(135deg, #4B0082, #6a1b9a);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: Arial, sans-serif;
-        }
-
-        .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            max-width: 450px;
-            width: 100%;
-        }
-
-        .logo {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo h2 {
-            color: #4B0082;
-            font-weight: bold;
-        }
-
-        #firebaseui-auth-container {
-            margin-top: 20px;
-        }
-
-        #loader {
-            text-align: center;
-            color: #666;
-            padding: 20px;
-        }
-
-        .manual-login {
-            margin-top: 20px;
-        }
-
-        .btn {
-            margin: 5px 0;
-        }
-    </style>
+    
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
 </head>
-
 <body>
+    <!-- Floating Background Shapes -->
+    <div class="floating-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
     <div class="login-container">
-        <div class="logo">
-            <h2>Men Stand Tall</h2>
-            <p class="text-muted">Project Management Portal</p>
+        <div class="logo-section">
+            <div class="logo-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="logo">
+                <h2>Men Stand Tall</h2>
+                <p>Project Management Portal</p>
+            </div>
         </div>
-
+        
         <div id="firebaseui-auth-container"></div>
-        <div id="loader">Loading authentication...</div>
-
-        <!-- Simple manual login -->
+        
+        <div id="loader">
+            <div class="loading-spinner"></div>
+            <p>Initializing secure authentication...</p>
+        </div>
+        
+        <!-- Manual login options -->
         <div id="manual-login" class="manual-login" style="display: none;">
-            <hr>
-            <h5>Sign In Options</h5>
-            <button class="btn btn-primary btn-block" id="google-signin">
-                <i class="fab fa-google"></i> Sign in with Google
+            <div class="divider">
+                <span>Sign in to continue</span>
+            </div>
+            
+            <button class="btn google-btn btn-block" id="google-signin">
+                <i class="fab fa-google"></i>
+                Continue with Google
             </button>
-            <div class="mt-3">
-                <input type="email" id="email" class="form-control mb-2" placeholder="Email address">
-                <input type="password" id="password" class="form-control mb-2" placeholder="Password">
-                <button class="btn btn-success btn-block" id="email-signin">Sign in with Email</button>
-                <button class="btn btn-info btn-block" id="email-register">Create Account</button>
+            
+            <div class="divider">
+                <span>or use email</span>
+            </div>
+            
+            <div class="form-group">
+                <input type="email" 
+                       id="email" 
+                       class="form-control" 
+                       placeholder="Enter your email address"
+                       autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       spellcheck="false">
+            </div>
+            <div class="form-group">
+                <input type="password" 
+                       id="password" 
+                       class="form-control" 
+                       placeholder="Enter your password"
+                       autocomplete="new-password"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       spellcheck="false">
+            </div>
+            
+            <button class="btn btn-primary btn-block" id="email-signin">
+                <i class="fas fa-sign-in-alt"></i>
+                Sign In
+            </button>
+            <button class="btn btn-success btn-block" id="email-register">
+                <i class="fas fa-user-plus"></i>
+                Create New Account
+            </button>
+        </div>
+        
+        <!-- Feature highlights -->
+        <div class="feature-list">
+            <div class="feature-item">
+                <i class="fas fa-shield-alt"></i>
+                <span>Secure authentication with Firebase</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-sync-alt"></i>
+                <span>Real-time project collaboration</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Advanced project analytics</span>
             </div>
         </div>
     </div>
@@ -91,10 +113,10 @@
     <!-- Firebase Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-
+    
     <script>
-        console.log('🔐 Login page starting...');
-
+        console.log('🔐 Modern login page starting...');
+        
         var firebaseConfig = {
             apiKey: "AIzaSyCCCWM8JMsxsY28DrhxWje0MGsGYc9XLQo",
             authDomain: "menstandtall-6779a.firebaseapp.com",
@@ -104,46 +126,124 @@
             appId: "1:610463601364:web:396e8e0c8aacafe2716141",
             measurementId: "G-XQCF3W12MX"
         };
-
+        
         var auth = null;
         var firebaseInitialized = false;
-
+        
         function hideLoader() {
             document.getElementById('loader').style.display = 'none';
         }
-
+        
+        // Clear all form fields on page load with visual feedback
+        function clearLoginForm() {
+            console.log('🧹 Clearing login form fields...');
+            
+            const emailField = document.getElementById('email');
+            const passwordField = document.getElementById('password');
+            let fieldsCleared = false;
+            
+            if (emailField) {
+                emailField.value = '';
+                emailField.setAttribute('value', '');
+                emailField.removeAttribute('data-value');
+                emailField.classList.add('form-cleared');
+                
+                // Force clear any browser autofill
+                setTimeout(function() {
+                    emailField.value = '';
+                }, 50);
+                
+                fieldsCleared = true;
+                console.log('✅ Email field cleared');
+            }
+            
+            if (passwordField) {
+                passwordField.value = '';
+                passwordField.setAttribute('value', '');
+                passwordField.removeAttribute('data-value');
+                passwordField.type = 'password'; // Ensure it stays as password field
+                passwordField.classList.add('form-cleared');
+                
+                // Force clear any browser autofill
+                setTimeout(function() {
+                    passwordField.value = '';
+                }, 50);
+                
+                fieldsCleared = true;
+                console.log('✅ Password field cleared');
+            }
+            
+            // Clear any browser-stored form data
+            const manualLoginForm = document.getElementById('manual-login');
+            if (manualLoginForm) {
+                const inputs = manualLoginForm.querySelectorAll('input');
+                inputs.forEach(function(input) {
+                    input.value = '';
+                    input.setAttribute('value', '');
+                    input.removeAttribute('data-value');
+                });
+            }
+            
+            // Remove the visual feedback class after animation
+            setTimeout(function() {
+                if (emailField) emailField.classList.remove('form-cleared');
+                if (passwordField) passwordField.classList.remove('form-cleared');
+            }, 500);
+            
+            // Force clear autocomplete values multiple times for stubborn browsers
+            setTimeout(function() {
+                if (emailField) emailField.value = '';
+                if (passwordField) passwordField.value = '';
+            }, 100);
+            
+            setTimeout(function() {
+                if (emailField) emailField.value = '';
+                if (passwordField) passwordField.value = '';
+            }, 200);
+            
+            if (fieldsCleared) {
+                console.log('✅ All form fields cleared successfully');
+            }
+        }
+        
+        // Enhanced show manual login with form clearing
         function showManualLogin() {
             document.getElementById('manual-login').style.display = 'block';
             hideLoader();
+            
+            // Clear form when showing manual login
+            setTimeout(function() {
+                clearLoginForm();
+            }, 200);
         }
-
+        
         // Initialize Firebase (without FirebaseUI)
         function initializeFirebase() {
             console.log('🔥 Initializing Firebase...');
-
+            
             try {
                 if (typeof firebase === 'undefined') {
                     throw new Error('Firebase SDK not loaded');
                 }
-
+                
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
                     console.log('✅ Firebase initialized');
                 } else {
                     console.log('✅ Firebase already initialized');
                 }
-
+                
                 auth = firebase.auth();
                 console.log('✅ Auth initialized');
-
+                
                 // Check if user is already logged in
-                auth.onAuthStateChanged(function (user) {
+                auth.onAuthStateChanged(function(user) {
                     if (user) {
                         console.log('✅ User already logged in:', user.email);
                         window.location.href = '/Dashboard';
                     }
                 });
-
+                
                 firebaseInitialized = true;
                 return true;
             } catch (error) {
@@ -151,111 +251,181 @@
                 return false;
             }
         }
-
+        
         // Setup manual login handlers
         function setupManualLogin() {
             console.log('🔧 Setting up manual login...');
-
+            
+            // Clear form fields immediately
+            clearLoginForm();
+            
+            // Add form clearing on focus
+            const emailField = document.getElementById('email');
+            const passwordField = document.getElementById('password');
+            
+            if (emailField) {
+                emailField.addEventListener('focus', function() {
+                    if (this.value === this.getAttribute('placeholder')) {
+                        this.value = '';
+                    }
+                });
+            }
+            
+            if (passwordField) {
+                passwordField.addEventListener('focus', function() {
+                    if (this.value === this.getAttribute('placeholder')) {
+                        this.value = '';
+                    }
+                });
+            }
+            
             // Google Sign In
-            document.getElementById('google-signin').onclick = function () {
+            document.getElementById('google-signin').onclick = function() {
                 console.log('🔄 Google sign in clicked');
+                const btn = this;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<div class="loading-spinner" style="width: 20px; height: 20px; margin: 0 auto;"></div>';
+                btn.disabled = true;
+                
                 if (auth) {
                     var provider = new firebase.auth.GoogleAuthProvider();
-                    auth.signInWithPopup(provider).then(function (result) {
+                    auth.signInWithPopup(provider).then(function(result) {
                         console.log('✅ Google sign in successful');
+                        // Clear form before redirect
+                        clearLoginForm();
                         window.location.href = '/Dashboard';
-                    }).catch(function (error) {
+                    }).catch(function(error) {
                         console.error('❌ Google sign in failed:', error);
                         alert('Google sign in failed: ' + error.message);
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        // Clear form on error
+                        clearLoginForm();
                     });
                 } else {
                     alert('Authentication not ready. Please refresh the page.');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
                 }
             };
-
+            
             // Email Sign In
-            document.getElementById('email-signin').onclick = function () {
+            document.getElementById('email-signin').onclick = function() {
                 console.log('🔄 Email sign in clicked');
+                const btn = this;
+                const originalText = btn.innerHTML;
+                
                 var email = document.getElementById('email').value.trim();
                 var password = document.getElementById('password').value;
-
+                
                 if (!email || !password) {
                     alert('Please enter both email and password.');
                     return;
                 }
-
+                
+                btn.innerHTML = '<div class="loading-spinner" style="width: 20px; height: 20px; margin: 0 auto;"></div>';
+                btn.disabled = true;
+                
                 if (auth) {
-                    auth.signInWithEmailAndPassword(email, password).then(function (result) {
+                    auth.signInWithEmailAndPassword(email, password).then(function(result) {
                         console.log('✅ Email sign in successful');
+                        // Clear form before redirect
+                        clearLoginForm();
                         window.location.href = '/Dashboard';
-                    }).catch(function (error) {
+                    }).catch(function(error) {
                         console.error('❌ Email sign in failed:', error);
                         alert('Sign in failed: ' + error.message);
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        // Clear password on failed login for security
+                        const passwordField = document.getElementById('password');
+                        if (passwordField) {
+                            passwordField.value = '';
+                        }
                     });
                 } else {
                     alert('Authentication not ready. Please refresh the page.');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
                 }
             };
-
+            
             // Email Registration
-            document.getElementById('email-register').onclick = function () {
+            document.getElementById('email-register').onclick = function() {
                 console.log('🔄 Email registration clicked');
+                const btn = this;
+                const originalText = btn.innerHTML;
+                
                 var email = document.getElementById('email').value.trim();
                 var password = document.getElementById('password').value;
-
+                
                 if (!email || !password) {
                     alert('Please enter both email and password.');
                     return;
                 }
-
+                
                 if (password.length < 6) {
                     alert('Password must be at least 6 characters long.');
                     return;
                 }
-
+                
+                btn.innerHTML = '<div class="loading-spinner" style="width: 20px; height: 20px; margin: 0 auto;"></div>';
+                btn.disabled = true;
+                
                 if (auth) {
-                    auth.createUserWithEmailAndPassword(email, password).then(function (result) {
+                    auth.createUserWithEmailAndPassword(email, password).then(function(result) {
                         console.log('✅ Account created successfully');
+                        // Clear form before redirect
+                        clearLoginForm();
                         window.location.href = '/Dashboard';
-                    }).catch(function (error) {
+                    }).catch(function(error) {
                         console.error('❌ Account creation failed:', error);
                         alert('Account creation failed: ' + error.message);
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        // Clear password on failed registration for security
+                        const passwordField = document.getElementById('password');
+                        if (passwordField) {
+                            passwordField.value = '';
+                        }
                     });
                 } else {
                     alert('Authentication not ready. Please refresh the page.');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
                 }
             };
-
-            console.log('✅ Manual login setup complete');
+            
+            console.log('✅ Manual login setup complete with form clearing');
         }
-
+        
         // Try to load FirebaseUI, but don't wait forever
         function tryFirebaseUI() {
             console.log('🎨 Attempting to load FirebaseUI...');
-
+            
             // Create FirebaseUI script element
             var script = document.createElement('script');
             script.src = 'https://cdn.firebase.com/libs/firebaseui/6.0.2/firebaseui.js';
-            script.onload = function () {
+            script.onload = function() {
                 console.log('✅ FirebaseUI loaded, initializing...');
                 initializeFirebaseUI();
             };
-            script.onerror = function () {
+            script.onerror = function() {
                 console.log('❌ FirebaseUI failed to load, using manual login');
                 showManualLogin();
                 setupManualLogin();
             };
-
+            
             // Add CSS for FirebaseUI
             var link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = 'https://cdn.firebase.com/libs/firebaseui/6.0.2/firebaseui.css';
             document.head.appendChild(link);
-
+            
             document.head.appendChild(script);
-
+            
             // Timeout fallback
-            setTimeout(function () {
+            setTimeout(function() {
                 if (typeof firebaseui === 'undefined') {
                     console.log('⏰ FirebaseUI timeout, falling back to manual login');
                     showManualLogin();
@@ -263,7 +433,7 @@
                 }
             }, 5000);
         }
-
+        
         // Initialize FirebaseUI if it loads
         function initializeFirebaseUI() {
             try {
@@ -276,10 +446,10 @@
                     tosUrl: '#',
                     privacyPolicyUrl: '#'
                 };
-
+                
                 var ui = new firebaseui.auth.AuthUI(auth);
                 ui.start('#firebaseui-auth-container', uiConfig);
-
+                
                 console.log('✅ FirebaseUI initialized');
                 hideLoader();
             } catch (error) {
@@ -288,17 +458,22 @@
                 setupManualLogin();
             }
         }
-
-        // Main initialization
-        document.addEventListener('DOMContentLoaded', function () {
+        
+        // Enhanced main initialization with simplified form clearing
+        document.addEventListener('DOMContentLoaded', function() {
             console.log('📄 DOM loaded, starting initialization...');
-
+            
+            // Clear form once when DOM is ready
+            setTimeout(function() {
+                clearLoginForm();
+            }, 100);
+            
             if (initializeFirebase()) {
                 // Try FirebaseUI first, but fallback to manual login
                 tryFirebaseUI();
-
+                
                 // Setup manual login as backup (always available)
-                setTimeout(function () {
+                setTimeout(function() {
                     setupManualLogin();
                 }, 1000);
             } else {
@@ -307,9 +482,16 @@
                 setupManualLogin();
             }
         });
-
-        console.log('🔐 Login page script loaded');
+        
+        // Clear form on page show (for back button navigation) - simplified
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                console.log('📄 Page shown from cache, clearing form...');
+                setTimeout(clearLoginForm, 100);
+            }
+        });
+        
+        console.log('🔐 Modern login page script loaded');
     </script>
 </body>
-
 </html>

@@ -4,101 +4,85 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Men Stand Tall</title>
+    
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/modern-layout.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Wilproject.styles.css" asp-append-version="true" />
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
-        }
-        .sidebar {
-            width: 220px;
-            background-color: #4B0082;
-            min-height: 100vh;
-            padding: 20px 10px;
-            position: fixed;
-            left: 0;
-            top: 0;
-            z-index: 1000;
-        }
-        .sidebar h4 {
-            color: white;
-            margin-bottom: 20px;
-        }
-        .sidebar a {
-            display: block;
-            color: white;
-            padding: 8px 12px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-bottom: 5px;
-            transition: background 0.3s;
-        }
-        .sidebar a:hover {
-            background-color: #6c63ff;
-        }
-        .content {
-            margin-left: 220px;
-            padding: 20px;
-            min-height: 100vh;
-        }
-        .sidebar .logout-section {
-            position: absolute;
-            bottom: 20px;
-            left: 10px;
-            right: 10px;
-        }
-        .user-info {
-            color: white;
-            font-size: 0.85em;
-            margin-bottom: 10px;
-            padding: 6px 10px;
-            border-radius: 5px;
-            background-color: rgba(255,255,255,0.1);
-            text-align: center;
-            display: none; /* Hidden by default */
-        }
-        .logout-btn {
-            width: 100%;
-            background: #dc3545;
-            border: 1px solid #dc3545;
-            color: white;
-            font-weight: 500;
-        }
-        .logout-btn:hover {
-            background: #c82333;
-            border-color: #c82333;
-            color: white;
-        }
-    </style>
 </head>
 <body>
-    <div class="d-flex">
-        <nav class="sidebar d-flex flex-column">
-            <div>
-                <h4>Navigation</h4>
-                <div id="sidebar-user-info" class="user-info">Loading...</div>
-                <a href="@Url.Page("/Dashboard")">Dashboard</a>
-                <a href="@Url.Page("/Projects")">Projects</a>
-                <a href="@Url.Page("/Calendar")">Calendar</a>
-                <a href="@Url.Page("/Tasks")">Tasks</a>
-                <a href="@Url.Page("/Messages")">Messages</a>
-                <a href="@Url.Page("/Report")">Reports</a>
-            </div>
-            <div class="logout-section">
-                <button class="btn logout-btn" id="sidebar-logout-btn">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </button>
-            </div>
-        </nav>
-        <div class="content">
-            <main role="main" class="pb-3">
-                @RenderBody()
-            </main>
+    <!-- Modern Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-users"></i> Men Stand Tall</h3>
+            <p>Project Management Portal</p>
         </div>
+        
+        <!-- User Info Card -->
+        <div id="sidebar-user-info" class="user-info">
+            <div class="user-avatar" id="user-avatar">MT</div>
+            <div class="user-name" id="user-name">Loading...</div>
+            <div class="user-role">Project Manager</div>
+        </div>
+        
+        <!-- Navigation -->
+        <div class="nav-section">
+            <div class="nav-title">Main</div>
+            <a href="@Url.Page("/Dashboard")" class="nav-link" data-page="dashboard">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="@Url.Page("/Projects")" class="nav-link" data-page="projects">
+                <i class="fas fa-project-diagram"></i>
+                <span>Projects</span>
+                <span class="notification-badge">3</span>
+            </a>
+            <a href="@Url.Page("/Tasks")" class="nav-link" data-page="tasks">
+                <i class="fas fa-tasks"></i>
+                <span>Tasks</span>
+            </a>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-title">Tools</div>
+            <a href="@Url.Page("/Calendar")" class="nav-link" data-page="calendar">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Calendar</span>
+            </a>
+            <a href="@Url.Page("/Messages")" class="nav-link" data-page="messages">
+                <i class="fas fa-comments"></i>
+                <span>Messages</span>
+            </a>
+            <a href="@Url.Page("/Report")" class="nav-link" data-page="reports">
+                <i class="fas fa-chart-bar"></i>
+                <span>Reports</span>
+            </a>
+        </div>
+        
+        <!-- Logout Section -->
+        <div class="logout-section">
+            <button class="logout-btn" id="sidebar-logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <main role="main">
+            @RenderBody()
+        </main>
     </div>
+
+    <!-- Mobile Menu Toggle (Hidden by default) -->
+    <button class="mobile-menu-toggle d-md-none" id="mobile-menu-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -109,9 +93,23 @@
     <script src="~/js/firebase-global.js"></script>
     
     <script>
-        console.log('🎯 Layout script starting...');
+        console.log('🎯 Modern layout script starting...');
         
         var currentUser = null;
+        
+        // Set active navigation link
+        function setActiveNavLink() {
+            const path = window.location.pathname.toLowerCase();
+            const links = document.querySelectorAll('.nav-link');
+            
+            links.forEach(link => {
+                link.classList.remove('active');
+                const page = link.getAttribute('data-page');
+                if (path.includes(page) || (path === '/' && page === 'dashboard')) {
+                    link.classList.add('active');
+                }
+            });
+        }
         
         // Check if current page is Dashboard
         function isDashboardPage() {
@@ -145,38 +143,53 @@
                     console.log('❌ No user, redirecting to login');
                     window.location.href = '/';
                 } else if (user) {
-                    // Only show user info on dashboard
+                    updateUserDisplay(user);
+                    // Show user info only on dashboard
                     if (isDashboardPage()) {
-                        updateUserDisplay(user);
-                    } else {
-                        hideUserDisplay();
+                        showUserInfo();
                     }
                 }
             });
         }
         
-        // Update user display in sidebar (only for dashboard)
+        // Update user display in sidebar
         function updateUserDisplay(user) {
-            var userInfoDiv = document.getElementById('sidebar-user-info');
-            if (userInfoDiv && user) {
-                var displayName = user.displayName || user.email || 'User';
-                var emailSymbol = String.fromCharCode(64);
-                var atIndex = displayName.indexOf(emailSymbol);
-                if (atIndex > -1) {
-                    displayName = displayName.substring(0, atIndex);
+            if (user) {
+                const displayName = user.displayName || user.email || 'User';
+                const emailSymbol = String.fromCharCode(64);
+                const atIndex = displayName.indexOf(emailSymbol);
+                const name = atIndex > -1 ? displayName.substring(0, atIndex) : displayName;
+                
+                // Update user name
+                const userNameEl = document.getElementById('user-name');
+                if (userNameEl) {
+                    userNameEl.textContent = name;
                 }
-                userInfoDiv.textContent = 'Welcome, ' + displayName;
-                userInfoDiv.style.display = 'block';
-                console.log('✅ User display updated for:', displayName);
+                
+                // Update avatar initials
+                const avatarEl = document.getElementById('user-avatar');
+                if (avatarEl) {
+                    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                    avatarEl.textContent = initials;
+                }
+                
+                console.log('✅ User display updated for:', name);
             }
         }
         
-        // Hide user display (for non-dashboard pages)
-        function hideUserDisplay() {
-            var userInfoDiv = document.getElementById('sidebar-user-info');
-            if (userInfoDiv) {
-                userInfoDiv.style.display = 'none';
-                console.log('✅ User display hidden');
+        // Show user info card
+        function showUserInfo() {
+            const userInfo = document.getElementById('sidebar-user-info');
+            if (userInfo) {
+                userInfo.classList.add('show');
+            }
+        }
+        
+        // Hide user info card
+        function hideUserInfo() {
+            const userInfo = document.getElementById('sidebar-user-info');
+            if (userInfo) {
+                userInfo.classList.remove('show');
             }
         }
         
@@ -194,6 +207,11 @@
             logoutBtn.onclick = function() {
                 console.log('🚪 Logout button clicked!');
                 
+                // Add loading state
+                const btnText = logoutBtn.querySelector('span');
+                const originalText = btnText.textContent;
+                btnText.innerHTML = '<div class="loading-spinner"></div>';
+                
                 // Use the global logout function
                 if (window.globalLogout) {
                     window.globalLogout();
@@ -209,20 +227,49 @@
             console.log('✅ Logout button setup complete');
         }
         
+        // Mobile menu toggle
+        function setupMobileMenu() {
+            const toggleBtn = document.getElementById('mobile-menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            
+            if (toggleBtn && sidebar) {
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+                
+                // Close sidebar when clicking outside on mobile
+                document.addEventListener('click', function(e) {
+                    if (window.innerWidth <= 768 && 
+                        !sidebar.contains(e.target) && 
+                        !toggleBtn.contains(e.target)) {
+                        sidebar.classList.remove('mobile-open');
+                    }
+                });
+            }
+        }
+        
         // Initialize everything when Firebase is ready
         waitForFirebase(function() {
-            console.log('✅ Firebase is ready, setting up layout functionality');
+            console.log('✅ Firebase is ready, setting up modern layout functionality');
             setupAuth();
             setupLogout();
-            console.log('✅ Layout setup complete');
+            setupMobileMenu();
+            setActiveNavLink();
+            
+            // Hide user info on non-dashboard pages
+            if (!isDashboardPage()) {
+                hideUserInfo();
+            }
+            
+            console.log('✅ Modern layout setup complete');
         });
         
-        // Also setup logout immediately (fallback)
+        // Set active nav on page load
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(setupLogout, 1000);
+            setActiveNavLink();
         });
         
-        console.log('🎯 Layout script loaded');
+        console.log('🎯 Modern layout script loaded');
     </script>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

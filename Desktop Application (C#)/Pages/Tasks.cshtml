@@ -4,354 +4,684 @@
     ViewData["Title"] = "Task Board";
 }
 
-<div class="container-fluid">
-    <h1>@ViewData["Title"]</h1>
-    <div id="user-info" class="mb-3" style="display: none;"></div>
-    
-    <div class="row">
-        <div class="col">
-            <h6>To Do</h6>
-            <div class="task-column" id="todo" ondrop="drop(event, 'To Do')" ondragover="allowDrop(event)"></div>
+<link rel="stylesheet" href="~/css/tasks.css" asp-append-version="true" />
+
+<!-- Tasks Header -->
+<div class="tasks-header">
+    <div class="tasks-header-content">
+        <div class="tasks-title-section">
+            <h1 class="tasks-title"><i class="fas fa-tasks"></i> Task Board</h1>
+            <p class="tasks-subtitle">Organize and track your tasks with our modern Kanban board</p>
         </div>
-        <div class="col">
-            <h6>Doing</h6>
-            <div class="task-column" id="doing" ondrop="drop(event, 'Doing')" ondragover="allowDrop(event)"></div>
+        <div class="tasks-actions">
+            <button class="btn-modern-task btn-add-task" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+                <i class="fas fa-plus"></i>
+                <span>Add Task</span>
+            </button>
+            <button class="btn-modern-task btn-view-all" data-bs-toggle="modal" data-bs-target="#viewAllTasksModal" onclick="renderAllTasksModal()">
+                <i class="fas fa-list"></i>
+                <span>View All</span>
+            </button>
         </div>
-        <div class="col">
-            <h6>Done</h6>
-            <div class="task-column" id="done" ondrop="drop(event, 'Done')" ondragover="allowDrop(event)"></div>
+    </div>
+</div>
+
+<!-- User Info Card (Hidden by default) -->
+<div id="user-info" class="user-info-card" style="display: none;">
+    <div class="d-flex align-items-center">
+        <div class="user-avatar" id="task-user-avatar">U</div>
+        <div>
+            <div class="fw-bold" id="task-user-name">Loading...</div>
+            <small class="opacity-75">Task Management Dashboard</small>
+        </div>
+    </div>
+</div>
+
+<!-- Task Statistics -->
+<div class="task-stats">
+    <div class="stat-card-task">
+        <div class="stat-number" id="todo-count">0</div>
+        <div class="stat-label">To Do</div>
+    </div>
+    <div class="stat-card-task">
+        <div class="stat-number" id="doing-count">0</div>
+        <div class="stat-label">In Progress</div>
+    </div>
+    <div class="stat-card-task">
+        <div class="stat-number" id="done-count">0</div>
+        <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card-task">
+        <div class="stat-number" id="total-count">0</div>
+        <div class="stat-label">Total Tasks</div>
+    </div>
+</div>
+
+<!-- Kanban Board -->
+<div class="kanban-board">
+    <!-- To Do Column -->
+    <div class="kanban-column todo-column">
+        <div class="column-header">
+            <div class="column-title">
+                <i class="fas fa-clipboard-list"></i>
+                To Do
+            </div>
+            <div class="column-count" id="todo-column-count">0</div>
+        </div>
+        <div class="task-column" id="todo" ondrop="drop(event, 'To Do')" ondragover="allowDrop(event)">
+            <div class="empty-column">
+                <i class="fas fa-clipboard-list"></i>
+                <h4>No tasks yet</h4>
+                <p>Add your first task to get started</p>
+            </div>
         </div>
     </div>
     
-    <div class="mt-4">
-        <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#addTaskModal">Add Task</button>
-        <button class="btn btn-info mt-2 ms-2" data-bs-toggle="modal" data-bs-target="#viewAllTasksModal" onclick="renderAllTasksModal()">View All Tasks</button>
+    <!-- Doing Column -->
+    <div class="kanban-column doing-column">
+        <div class="column-header">
+            <div class="column-title">
+                <i class="fas fa-play-circle"></i>
+                In Progress
+            </div>
+            <div class="column-count" id="doing-column-count">0</div>
+        </div>
+        <div class="task-column" id="doing" ondrop="drop(event, 'Doing')" ondragover="allowDrop(event)">
+            <div class="empty-column">
+                <i class="fas fa-play-circle"></i>
+                <h4>Ready to work</h4>
+                <p>Move tasks here when you start working</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Done Column -->
+    <div class="kanban-column done-column">
+        <div class="column-header">
+            <div class="column-title">
+                <i class="fas fa-check-circle"></i>
+                Completed
+            </div>
+            <div class="column-count" id="done-column-count">0</div>
+        </div>
+        <div class="task-column" id="done" ondrop="drop(event, 'Done')" ondragover="allowDrop(event)">
+            <div class="empty-column">
+                <i class="fas fa-check-circle"></i>
+                <h4>Great job!</h4>
+                <p>Completed tasks will appear here</p>
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- Add Task Modal -->
-<div class="modal fade" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="addTaskModalLabel">Add Task</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <input type="text" id="newTaskInput" class="form-control mb-2" placeholder="Task name..." />
-        <textarea id="newTaskDesc" class="form-control mb-2" placeholder="Description..."></textarea>
-        <input type="date" id="newTaskDue" class="form-control mb-2" onchange="updateDueCountdown()" />
-        <small id="dueCountdown" class="form-text text-muted mb-2"></small>
-        <select id="newTaskPriority" class="form-control mb-2">
-            <option value="Low">Low Priority</option>
-            <option value="Medium">Medium Priority</option>
-            <option value="High">High Priority</option>
-        </select>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-primary" onclick="addTaskAndClose()">Add Task</button>
-      </div>
+<div class="modal fade modal-modern" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTaskModalLabel">
+                    <i class="fas fa-plus-circle"></i>
+                    Add New Task
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-floating">
+                    <input type="text" id="newTaskInput" class="form-control" placeholder="Task name..." required />
+                    <label for="newTaskInput">Task Name</label>
+                </div>
+                
+                <div class="form-floating">
+                    <textarea id="newTaskDesc" class="form-control" placeholder="Description..." style="height: 100px"></textarea>
+                    <label for="newTaskDesc">Description</label>
+                </div>
+                
+                <div class="form-floating">
+                    <input type="date" id="newTaskDue" class="form-control" onchange="updateDueCountdown()" />
+                    <label for="newTaskDue">Due Date</label>
+                </div>
+                
+                <small id="dueCountdown" class="form-text text-muted mb-3"></small>
+                
+                <div class="form-floating">
+                    <select id="newTaskPriority" class="form-control">
+                        <option value="Low">Low Priority</option>
+                        <option value="Medium">Medium Priority</option>
+                        <option value="High">High Priority</option>
+                    </select>
+                    <label for="newTaskPriority">Priority</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-modern-task btn-add-task" onclick="addTaskAndClose()">
+                    <i class="fas fa-save"></i> Add Task
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
-<!-- Modal for viewing all tasks -->
-<div class="modal fade" id="viewAllTasksModal" tabindex="-1" aria-labelledby="viewAllTasksModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="viewAllTasksModalLabel">All Tasks</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="d-flex justify-content-end align-items-center p-2">
-          <label for="taskFilter" class="me-2 mb-0">Filter:</label>
-          <select id="taskFilter" class="form-control w-auto" onchange="renderAllTasksModal()">
-              <option value="all">All</option>
-              <option value="deleted">Deleted</option>
-              <option value="ongoing">Ongoing</option>
-              <option value="completed">Completed</option>
-          </select>
-      </div>
-      <div class="modal-body" id="allTasksModalBody">
-        <!-- Tasks will be rendered here -->
-      </div>
+<!-- View All Tasks Modal -->
+<div class="modal fade modal-modern" id="viewAllTasksModal" tabindex="-1" aria-labelledby="viewAllTasksModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewAllTasksModalLabel">
+                    <i class="fas fa-list"></i>
+                    All Tasks
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="d-flex justify-content-end align-items-center p-3 border-bottom">
+                <label for="taskFilter" class="me-2 mb-0 fw-bold">Filter:</label>
+                <select id="taskFilter" class="form-select w-auto" onchange="renderAllTasksModal()">
+                    <option value="all">All Tasks</option>
+                    <option value="deleted">Deleted</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            <div class="modal-body" id="allTasksModalBody">
+                <div class="text-center py-4">
+                    <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                    <h5>No tasks found</h5>
+                    <p class="text-muted">Tasks matching your filter will appear here</p>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
-
-<style>
-    .task-column {
-        min-height: 300px;
-        border: 1px dashed #ccc;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 5px;
-        background-color: #fff;
-    }
-    .draggable {
-        padding: 10px;
-        margin: 5px 0;
-        background-color: #e9ecef;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        cursor: move;
-    }
-    .completed-task {
-        border: 2px solid #28a745 !important;
-        background-color: #eafbe7;
-    }
-    .deleted-task {
-        border: 2px solid #dc3545 !important;
-        background-color: #fbeaea;
-    }
-    .todo-task {
-        border: 2px solid #007bff !important;
-    }
-    .doing-task {
-        border: 2px solid #fd7e14 !important;
-    }
-    .done-task {
-        border: 2px solid #28a745 !important;
-    }
-    .active-task {
-        border: 2px solid #fd7e14 !important;
-        background-color: #fff7e6;
-    }
-</style>
 
 @section Scripts {
     <script>
-        console.log('📝 Tasks script starting...');
-        
-        let tasks = [];
-        let currentUser = null;
-        let db = null;
+        // Tasks namespace to avoid conflicts with other scripts
+        (function() {
+            'use strict';
+            
+            console.log('📝 Modern tasks script starting...');
+            
+            let tasks = [];
+            let tasksCurrentUser = null;
+            let tasksDB = null;
 
-        // Wait for global Firebase to be ready
-        function waitForTasksFirebase(callback) {
-            if (window.firebaseAuth && window.firebaseDB) {
-                callback();
-            } else {
-                setTimeout(function() { waitForTasksFirebase(callback); }, 100);
-            }
-        }
-        
-        // Setup tasks-specific functionality
-        function setupTasks() {
-            console.log('📝 Setting up tasks');
-            
-            if (!window.firebaseAuth || !window.firebaseDB) {
-                console.error('❌ Firebase not available in tasks');
-                return;
-            }
-            
-            db = window.firebaseDB;
-            
-            // Authentication check for tasks
-            window.firebaseAuth.onAuthStateChanged(function(user) {
-                if (!user) {
-                    console.log('❌ No user in tasks, redirecting');
-                    window.location.href = '/';
+            // Wait for global Firebase to be ready
+            function waitForTasksFirebase(callback) {
+                if (window.firebaseAuth && window.firebaseDB) {
+                    callback();
                 } else {
-                    currentUser = user;
-                    console.log('✅ Tasks user authenticated:', user.email);
+                    setTimeout(function() { waitForTasksFirebase(callback); }, 100);
+                }
+            }
+            
+            // Setup tasks-specific functionality
+            function setupTasks() {
+                console.log('📝 Setting up modern tasks');
+                
+                if (!window.firebaseAuth || !window.firebaseDB) {
+                    console.error('❌ Firebase not available in tasks');
+                    return;
+                }
+                
+                tasksDB = window.firebaseDB;
+                
+                // Authentication check for tasks
+                window.firebaseAuth.onAuthStateChanged(function(user) {
+                    if (!user) {
+                        console.log('❌ No user in tasks, redirecting');
+                        window.location.href = '/';
+                    } else {
+                        tasksCurrentUser = user;
+                        console.log('✅ Tasks user authenticated:', user.email);
+                        
+                        updateUserDisplay(user);
+                        loadTasksFromFirestore();
+                    }
+                });
+            }
+
+            // Update user display
+            function updateUserDisplay(user) {
+                if (user) {
+                    const displayName = user.displayName || user.email || 'User';
+                    const emailSymbol = String.fromCharCode(64);
+                    const atIndex = displayName.indexOf(emailSymbol);
+                    const name = atIndex > -1 ? displayName.substring(0, atIndex) : displayName;
                     
-                    // Optionally show user info (hidden by default)
-                    var userInfoElement = document.getElementById('user-info');
-                    if (userInfoElement) {
-                        userInfoElement.innerHTML = '<span class="text-success">Logged in as: ' + user.email + '</span>';
+                    // Update user name
+                    const userNameEl = document.getElementById('task-user-name');
+                    if (userNameEl) {
+                        userNameEl.textContent = name;
                     }
                     
-                    loadTasksFromFirestore();
+                    // Update avatar initials
+                    const avatarEl = document.getElementById('task-user-avatar');
+                    if (avatarEl) {
+                        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                        avatarEl.textContent = initials;
+                    }
+                    
+                    // Show user info
+                    const userInfoEl = document.getElementById('user-info');
+                    if (userInfoEl) {
+                        userInfoEl.style.display = 'block';
+                    }
+                    
+                    console.log('✅ Task user display updated for:', name);
                 }
-            });
-        }
-
-        // Firestore functions
-        function loadTasksFromFirestore() {
-            if (!db || !currentUser) return;
-            
-            db.collection('tasks').where('uid', '==', currentUser.uid).get().then(snapshot => {
-                tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderTasksUI();
-                console.log('✅ Tasks loaded:', tasks.length);
-            }).catch(error => {
-                console.error("Error loading tasks: ", error);
-            });
-        }
-
-        function saveTaskToFirestore(task) {
-            if (!db || !currentUser) return;
-            
-            if (task.id) {
-                db.collection('tasks').doc(task.id).set(task);
-            } else {
-                db.collection('tasks').add({ ...task, uid: currentUser.uid });
             }
-        }
 
-        function updateTaskInFirestore(task) {
-            if (!db || !currentUser || !task.id) return;
-            db.collection('tasks').doc(task.id).set(task);
-        }
+            // Firestore functions
+            function loadTasksFromFirestore() {
+                if (!tasksDB || !tasksCurrentUser) return;
+                
+                tasksDB.collection('tasks').where('uid', '==', tasksCurrentUser.uid).get().then(snapshot => {
+                    tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderTasksUI();
+                    updateTaskCounts();
+                    console.log('✅ Tasks loaded:', tasks.length);
+                    
+                    // Trigger dashboard update
+                    if (typeof window.dispatchEvent === 'function') {
+                        const event = new CustomEvent('taskUpdated', {
+                            detail: { action: 'loaded', count: tasks.length }
+                        });
+                        window.dispatchEvent(event);
+                    }
+                    
+                }).catch(error => {
+                    console.error("Error loading tasks: ", error);
+                    // Still render UI even if loading fails
+                    renderTasksUI();
+                    updateTaskCounts();
+                });
+            }
 
-        function renderTasksUI() {
-            ['todo', 'doing', 'done'].forEach(colId => {
-                const col = document.getElementById(colId);
-                if (col) col.innerHTML = '';
-            });
-            
-            tasks.forEach(task => {
-                let targetCol = null;
-                if (task.status === 'To Do') {
-                    targetCol = document.getElementById('todo');
-                } else if (task.status === 'Doing') {
-                    targetCol = document.getElementById('doing');
-                } else if (task.status === 'Done') {
-                    targetCol = document.getElementById('done');
+            function saveTaskToFirestore(task) {
+                if (!tasksDB || !tasksCurrentUser) return;
+                
+                if (task.id) {
+                    tasksDB.collection('tasks').doc(task.id).set(task);
+                } else {
+                    tasksDB.collection('tasks').add({ ...task, uid: tasksCurrentUser.uid }).then(docRef => {
+                        console.log('✅ Task saved with ID:', docRef.id);
+                        setTimeout(loadTasksFromFirestore, 500);
+                    });
+                }
+            }
+
+            function updateTaskInFirestore(task) {
+                if (!tasksDB || !tasksCurrentUser || !task.id) return;
+                tasksDB.collection('tasks').doc(task.id).set(task).then(() => {
+                    console.log('✅ Task updated');
+                    setTimeout(loadTasksFromFirestore, 500);
+                });
+            }
+
+            function renderTasksUI() {
+                // Clear all columns
+                ['todo', 'doing', 'done'].forEach(colId => {
+                    const col = document.getElementById(colId);
+                    if (col) {
+                        // Remove only task cards, keep empty state
+                        const taskCards = col.querySelectorAll('.task-card');
+                        taskCards.forEach(card => card.remove());
+                    }
+                });
+                
+                // Show empty states initially
+                showEmptyStates();
+                
+                // Render tasks
+                tasks.forEach(task => {
+                    let targetCol = null;
+                    if (task.status === 'To Do') {
+                        targetCol = document.getElementById('todo');
+                    } else if (task.status === 'Doing') {
+                        targetCol = document.getElementById('doing');
+                    } else if (task.status === 'Done') {
+                        targetCol = document.getElementById('done');
+                    }
+                    
+                    if (targetCol) {
+                        // Hide empty state
+                        const emptyElement = targetCol.querySelector('.empty-column');
+                        if (emptyElement) emptyElement.style.display = 'none';
+                        
+                        targetCol.appendChild(createTaskElement(task));
+                    }
+                });
+            }
+
+            function showEmptyStates() {
+                ['todo', 'doing', 'done'].forEach(colId => {
+                    const col = document.getElementById(colId);
+                    const emptyElement = col?.querySelector('.empty-column');
+                    if (emptyElement) {
+                        emptyElement.style.display = 'flex';
+                    }
+                });
+            }
+
+            function updateTaskCounts() {
+                const todoTasks = tasks.filter(t => t.status === 'To Do');
+                const doingTasks = tasks.filter(t => t.status === 'Doing');
+                const doneTasks = tasks.filter(t => t.status === 'Done');
+                
+                // Update column counts
+                const todoCountEl = document.getElementById('todo-column-count');
+                const doingCountEl = document.getElementById('doing-column-count');
+                const doneCountEl = document.getElementById('done-column-count');
+                
+                if (todoCountEl) todoCountEl.textContent = todoTasks.length;
+                if (doingCountEl) doingCountEl.textContent = doingTasks.length;
+                if (doneCountEl) doneCountEl.textContent = doneTasks.length;
+                
+                // Update stats
+                const todoStatEl = document.getElementById('todo-count');
+                const doingStatEl = document.getElementById('doing-count');
+                const doneStatEl = document.getElementById('done-count');
+                const totalStatEl = document.getElementById('total-count');
+                
+                if (todoStatEl) todoStatEl.textContent = todoTasks.length;
+                if (doingStatEl) doingStatEl.textContent = doingTasks.length;
+                if (doneStatEl) doneStatEl.textContent = doneTasks.length;
+                if (totalStatEl) totalStatEl.textContent = tasks.length;
+            }
+
+            // Task functions
+            function addTask() {
+                const taskInput = document.getElementById('newTaskInput');
+                const descInput = document.getElementById('newTaskDesc');
+                const dueInput = document.getElementById('newTaskDue');
+                const priorityInput = document.getElementById('newTaskPriority');
+                
+                if (!taskInput || !descInput || !dueInput || !priorityInput) {
+                    console.error('❌ Task form elements not found');
+                    return;
                 }
                 
-                if (targetCol) {
-                    targetCol.appendChild(createTaskElement(task.name, task.status, task));
+                const taskName = taskInput.value.trim();
+                const description = descInput.value.trim();
+                const dueDate = dueInput.value;
+                const priority = priorityInput.value;
+                
+                if (taskName && tasksCurrentUser) {
+                    const newTask = {
+                        name: taskName,
+                        description: description,
+                        dueDate: dueDate,
+                        priority: priority,
+                        status: 'To Do',
+                        uid: tasksCurrentUser.uid,
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    saveTaskToFirestore(newTask);
+                    showTaskNotification('✅ Task created successfully!', 'success');
+                    
+                    // Clear form
+                    taskInput.value = '';
+                    descInput.value = '';
+                    dueInput.value = '';
+                    priorityInput.value = 'Low';
+                    
+                    const countdown = document.getElementById('dueCountdown');
+                    if (countdown) countdown.textContent = '';
                 }
+            }
+
+            // Global function for addTaskAndClose
+            window.addTaskAndClose = function() {
+                addTask();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addTaskModal'));
+                if (modal) modal.hide();
+            };
+
+            // Global function for updateDueCountdown
+            window.updateDueCountdown = function() {
+                const dueInput = document.getElementById('newTaskDue');
+                const countdown = document.getElementById('dueCountdown');
+                
+                if (dueInput && dueInput.value && countdown) {
+                    const dueDate = new Date(dueInput.value);
+                    const today = new Date();
+                    const diffTime = dueDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays < 0) {
+                        countdown.textContent = `⚠️ This date is ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''} in the past`;
+                        countdown.className = 'form-text text-danger';
+                    } else if (diffDays === 0) {
+                        countdown.textContent = '🎯 Due today';
+                        countdown.className = 'form-text text-warning';
+                    } else {
+                        countdown.textContent = `📅 ${diffDays} day${diffDays > 1 ? 's' : ''} from now`;
+                        countdown.className = 'form-text text-success';
+                    }
+                }
+            };
+
+            function createTaskElement(taskObj) {
+                const taskDiv = document.createElement('div');
+                taskDiv.classList.add('task-card', `${taskObj.status.toLowerCase().replace(' ', '')}-task`);
+                taskDiv.setAttribute('draggable', 'true');
+                taskDiv.setAttribute('data-task-id', taskObj.id);
+
+                // Task header
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'task-header';
+                
+                const nameEl = document.createElement('h6');
+                nameEl.className = 'task-name';
+                nameEl.textContent = taskObj.name;
+                
+                const priorityEl = document.createElement('span');
+                priorityEl.className = `task-priority ${taskObj.priority.toLowerCase()}`;
+                priorityEl.textContent = taskObj.priority;
+                
+                headerDiv.appendChild(nameEl);
+                headerDiv.appendChild(priorityEl);
+                taskDiv.appendChild(headerDiv);
+
+                // Task description
+                if (taskObj.description) {
+                    const descEl = document.createElement('div');
+                    descEl.className = 'task-description';
+                    descEl.textContent = taskObj.description;
+                    taskDiv.appendChild(descEl);
+                }
+
+                // Task meta
+                if (taskObj.dueDate) {
+                    const metaDiv = document.createElement('div');
+                    metaDiv.className = 'task-meta';
+                    
+                    const dueEl = document.createElement('div');
+                    dueEl.className = 'task-due';
+                    
+                    const dueDate = new Date(taskObj.dueDate);
+                    const today = new Date();
+                    const diffTime = dueDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays < 0) {
+                        dueEl.classList.add('overdue');
+                        dueEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Overdue`;
+                    } else if (diffDays <= 2) {
+                        dueEl.classList.add('due-soon');
+                        dueEl.innerHTML = `<i class="fas fa-clock"></i> Due ${diffDays === 0 ? 'today' : `in ${diffDays} day${diffDays > 1 ? 's' : ''}`}`;
+                    } else {
+                        dueEl.innerHTML = `<i class="fas fa-calendar"></i> Due ${dueDate.toLocaleDateString()}`;
+                    }
+                    
+                    metaDiv.appendChild(dueEl);
+                    taskDiv.appendChild(metaDiv);
+                }
+
+                // Task actions
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'task-actions';
+
+                if (taskObj.status === 'To Do') {
+                    const startBtn = document.createElement('button');
+                    startBtn.className = 'task-btn start';
+                    startBtn.innerHTML = '<i class="fas fa-play"></i> Start';
+                    startBtn.onclick = function(e) { 
+                        e.stopPropagation(); 
+                        moveTaskToDoing(taskObj.id); 
+                    };
+                    actionsDiv.appendChild(startBtn);
+                } else if (taskObj.status === 'Doing') {
+                    const completeBtn = document.createElement('button');
+                    completeBtn.className = 'task-btn complete';
+                    completeBtn.innerHTML = '<i class="fas fa-check"></i> Complete';
+                    completeBtn.onclick = function(e) { 
+                        e.stopPropagation(); 
+                        moveTaskToDone(taskObj.id); 
+                    };
+                    actionsDiv.appendChild(completeBtn);
+                }
+
+                taskDiv.appendChild(actionsDiv);
+
+                // Add drag event listeners
+                taskDiv.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', taskObj.id);
+                    taskDiv.classList.add('dragging');
+                });
+
+                taskDiv.addEventListener('dragend', function(e) {
+                    taskDiv.classList.remove('dragging');
+                });
+
+                return taskDiv;
+            }
+
+            function moveTaskToDoing(taskId) {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.status = 'Doing';
+                    updateTaskInFirestore(task);
+                    showTaskNotification('▶️ Task moved to In Progress!', 'info');
+                }
+            }
+
+            function moveTaskToDone(taskId) {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.status = 'Done';
+                    updateTaskInFirestore(task);
+                    showTaskNotification('✅ Task completed!', 'success');
+                }
+            }
+
+            // Global drag and drop functions
+            window.allowDrop = function(ev) {
+                ev.preventDefault();
+                ev.currentTarget.classList.add('drag-over');
+            };
+
+            window.drop = function(ev, status) {
+                ev.preventDefault();
+                ev.currentTarget.classList.remove('drag-over');
+                
+                const taskId = ev.dataTransfer.getData('text/plain');
+                const task = tasks.find(t => t.id === taskId);
+                
+                if (task && task.status !== status) {
+                    task.status = status;
+                    updateTaskInFirestore(task);
+                    showTaskNotification(`📋 Task moved to ${status}!`, 'info');
+                }
+            };
+
+            // Global function for renderAllTasksModal
+            window.renderAllTasksModal = function() {
+                console.log('📋 Rendering all tasks modal...');
+                const modalBody = document.getElementById('allTasksModalBody');
+                const filter = document.getElementById('taskFilter')?.value || 'all';
+                
+                if (!modalBody) return;
+                
+                let filteredTasks = tasks;
+                if (filter === 'completed') {
+                    filteredTasks = tasks.filter(t => t.status === 'Done');
+                } else if (filter === 'ongoing') {
+                    filteredTasks = tasks.filter(t => t.status !== 'Done');
+                }
+                
+                if (filteredTasks.length === 0) {
+                    modalBody.innerHTML = `
+                        <div class="text-center py-4">
+                            <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                            <h5>No ${filter} tasks found</h5>
+                            <p class="text-muted">Tasks matching your filter will appear here</p>
+                        </div>
+                    `;
+                } else {
+                    modalBody.innerHTML = filteredTasks.map(task => `
+                        <div class="task-item mb-2 p-3 border rounded">
+                            <h6>${task.name}</h6>
+                            <p class="mb-1">${task.description || 'No description'}</p>
+                            <small class="text-muted">Status: ${task.status} | Priority: ${task.priority}</small>
+                        </div>
+                    `).join('');
+                }
+            };
+
+            // Add drag leave event
+            document.addEventListener('DOMContentLoaded', function() {
+                ['todo', 'doing', 'done'].forEach(colId => {
+                    const col = document.getElementById(colId);
+                    if (col) {
+                        col.addEventListener('dragleave', function(e) {
+                            // Only remove drag-over if we're leaving the column entirely
+                            if (!col.contains(e.relatedTarget)) {
+                                col.classList.remove('drag-over');
+                            }
+                        });
+                    }
+                });
             });
-        }
 
-        // Task functions
-        function addTask() {
-            const taskInput = document.getElementById('newTaskInput');
-            const descInput = document.getElementById('newTaskDesc');
-            const dueInput = document.getElementById('newTaskDue');
-            const priorityInput = document.getElementById('newTaskPriority');
-            
-            const taskName = taskInput.value.trim();
-            const description = descInput.value.trim();
-            const dueDate = dueInput.value;
-            const priority = priorityInput.value;
-            
-            if (taskName && currentUser) {
-                const newTask = {
-                    name: taskName,
-                    description: description,
-                    dueDate: dueDate,
-                    priority: priority,
-                    status: 'To Do',
-                    uid: currentUser.uid,
-                    createdAt: new Date().toISOString()
-                };
+            // Show task notification
+            function showTaskNotification(message, type) {
+                type = type || 'info';
+                const notification = document.createElement('div');
+                notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: ' + 
+                    (type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6') + 
+                    '; color: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; opacity: 0; transform: translateX(100%); transition: all 0.3s ease; max-width: 300px; font-weight: 500;';
+                notification.textContent = message;
                 
-                saveTaskToFirestore(newTask);
-                setTimeout(loadTasksFromFirestore, 500);
+                document.body.appendChild(notification);
                 
-                // Clear form
-                taskInput.value = '';
-                descInput.value = '';
-                dueInput.value = '';
-                priorityInput.value = 'Low';
+                setTimeout(function() {
+                    notification.style.opacity = '1';
+                    notification.style.transform = 'translateX(0)';
+                }, 100);
+                
+                setTimeout(function() {
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(function() {
+                        if (document.body.contains(notification)) {
+                            document.body.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
             }
-        }
-
-        function addTaskAndClose() {
-            addTask();
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addTaskModal'));
-            if (modal) modal.hide();
-        }
-
-        function createTaskElement(taskName, status, taskObj) {
-            const taskDiv = document.createElement('div');
-            taskDiv.classList.add('draggable', 'd-flex', 'justify-content-between', 'align-items-center', 'flex-column');
-            taskDiv.setAttribute('draggable', 'true');
-            taskDiv.setAttribute('data-task-name', taskName);
-            taskDiv.style.cursor = 'pointer';
-
-            // Add status-based styling
-            if (status === 'To Do') taskDiv.classList.add('todo-task');
-            else if (status === 'Doing') taskDiv.classList.add('doing-task');
-            else if (status === 'Done') taskDiv.classList.add('done-task');
-
-            const headerDiv = document.createElement('div');
-            headerDiv.classList.add('w-100', 'd-flex', 'justify-content-between', 'align-items-center');
             
-            const nameSpan = document.createElement('span');
-            nameSpan.innerHTML = '<strong>' + taskName + '</strong>';
-            headerDiv.appendChild(nameSpan);
-
-            const btnGroup = document.createElement('div');
-            btnGroup.className = 'btn-group';
-
-            // Status change button
-            if (status === 'To Do') {
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-warning btn-sm';
-                btn.innerText = 'Start';
-                btn.onclick = function(e) { 
-                    e.stopPropagation(); 
-                    moveTaskToDoing(taskName); 
-                };
-                btnGroup.appendChild(btn);
-            } else if (status === 'Doing') {
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-success btn-sm';
-                btn.innerText = 'Complete';
-                btn.onclick = function(e) { 
-                    e.stopPropagation(); 
-                    moveTaskToDone(taskName); 
-                };
-                btnGroup.appendChild(btn);
-            }
-
-            headerDiv.appendChild(btnGroup);
-            taskDiv.appendChild(headerDiv);
-
-            return taskDiv;
-        }
-
-        function moveTaskToDoing(taskName) {
-            const task = tasks.find(t => t.name === taskName);
-            if (task) {
-                task.status = 'Doing';
-                updateTaskInFirestore(task);
-                setTimeout(loadTasksFromFirestore, 500);
-            }
-        }
-
-        function moveTaskToDone(taskName) {
-            const task = tasks.find(t => t.name === taskName);
-            if (task) {
-                task.status = 'Done';
-                updateTaskInFirestore(task);
-                setTimeout(loadTasksFromFirestore, 500);
-            }
-        }
-
-        // Drag and drop functions
-        function allowDrop(ev) {
-            ev.preventDefault();
-        }
-
-        function drop(ev, status) {
-            ev.preventDefault();
-            // Add drag and drop functionality here
-        }
-
-        function renderAllTasksModal() {
-            // Add modal rendering functionality
-            console.log('Rendering all tasks modal...');
-        }
-
-        function updateDueCountdown() {
-            // Add countdown functionality
-            console.log('Updating due countdown...');
-        }
-        
-        // Initialize everything when Firebase is ready
-        waitForTasksFirebase(function() {
-            console.log('✅ Firebase ready for tasks');
-            setupTasks();
-            console.log('✅ Tasks setup complete');
-        });
-        
-        console.log('📝 Tasks script loaded');
+            // Initialize everything when Firebase is ready
+            waitForTasksFirebase(function() {
+                console.log('✅ Firebase ready for modern tasks');
+                setupTasks();
+                console.log('✅ Modern tasks setup complete');
+            });
+            
+            console.log('📝 Modern tasks script loaded');
+        })();
     </script>
 }

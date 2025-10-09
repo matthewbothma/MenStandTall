@@ -1,206 +1,280 @@
-﻿@page
-@model YourNamespace.Pages.ProjectsModel
+@page
+@model Wilproject.Pages.ProjectsModel
 @{
-    ViewData["Title"] = "Projects";
+    ViewData["Title"] = "Company Projects";
 }
 
-<div class="container mt-4">
-    <h2 class="text-center mb-4">🌍 Project Overview</h2>
+<link rel="stylesheet" href="~/css/projects.css" asp-append-version="true" />
 
-    <!-- Add Project Button -->
-    <div class="text-end mb-3">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProjectModal">
-            <i class="bi bi-plus-circle"></i> Add New Project
-        </button>
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-content">
+        <div class="page-title-section">
+            <h1><i class="fas fa-project-diagram"></i> Company Projects</h1>
+            <p>Collaborate and track projects across your entire team</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-modern btn-add-project" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                <i class="fas fa-plus"></i>
+                <span>Add New Project</span>
+            </button>
+            <button class="btn-modern btn-secondary" onclick="refreshProjects()" id="refreshBtn">
+                <i class="fas fa-sync-alt"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
     </div>
+</div>
 
-    <!-- Search + Filter -->
-    <div class="d-flex justify-content-between mb-3">
-        <input type="text" class="form-control w-50" placeholder="Search projects...">
-        <select class="form-select w-25 ms-2" id="statusFilter">
-            <option value="all">All</option>
+<!-- Project Statistics -->
+<div class="project-stats" id="projectStats">
+    <div class="stat-card-project">
+        <div class="stat-number" id="total-projects">0</div>
+        <div class="stat-label">Total Projects</div>
+    </div>
+    <div class="stat-card-project">
+        <div class="stat-number" id="active-projects">0</div>
+        <div class="stat-label">Active</div>
+    </div>
+    <div class="stat-card-project">
+        <div class="stat-number" id="completed-projects">0</div>
+        <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card-project">
+        <div class="stat-number" id="overdue-projects">0</div>
+        <div class="stat-label">Overdue</div>
+    </div>
+</div>
+
+<!-- Controls Section -->
+<div class="controls-section">
+    <div class="search-filter-row">
+        <div class="search-input">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search projects by name or description..." id="searchInput">
+        </div>
+        <select class="filter-select" id="statusFilter">
+            <option value="all">All Projects</option>
             <option value="planning">Planning</option>
             <option value="active">Active</option>
             <option value="completed">Completed</option>
             <option value="onhold">On Hold</option>
         </select>
-    </div>
-
-    <!-- Projects Grid -->
-    <div class="row" id="projectsContainer">
-        @if (Model.Projects.Any())
-        {
-            @foreach (var project in Model.Projects)
-            {
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow-lg border-0 rounded-3 project-card" data-status="@project.Status.ToString().ToLower()">
-                        <div class="card-body">
-                            <h5 class="card-title">@project.Name</h5>
-                            <p class="card-text text-muted">@project.Description</p>
-                            
-                            @{
-                                var badgeClass = project.Status switch
-                                {
-                                    YourNamespace.Pages.ProjectStatus.Active => "bg-primary",
-                                    YourNamespace.Pages.ProjectStatus.Completed => "bg-success",
-                                    YourNamespace.Pages.ProjectStatus.Planning => "bg-warning",
-                                    YourNamespace.Pages.ProjectStatus.OnHold => "bg-secondary",
-                                    _ => "bg-secondary"
-                                };
-                                
-                                var progressBarClass = project.Progress switch
-                                {
-                                    >= 80 => "bg-success",
-                                    >= 50 => "bg-info",
-                                    >= 25 => "bg-warning",
-                                    _ => "bg-danger"
-                                };
-                            }
-                            
-                            <span class="badge @badgeClass">@project.Status</span>
-                            <p class="mt-2 mb-1">Progress:</p>
-                            <div class="progress mb-2">
-                                <div class="progress-bar @progressBarClass" style="width: @(project.Progress)%;">@project.Progress%</div>
-                            </div>
-                            <p class="small text-muted">Due: @project.Deadline.ToString("dd MMM yyyy")</p>
-                            <div class="d-flex justify-content-between">
-                                <button class="btn btn-sm btn-outline-info">View</button>
-                                <button class="btn btn-sm btn-outline-warning">Edit</button>
-                                <button class="btn btn-sm btn-outline-danger">Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-        else
-        {
-            <div class="col-12">
-                <div class="text-center py-5">
-                    <h4 class="text-muted">No projects found</h4>
-                    <p class="text-muted">Click "Add New Project" to get started!</p>
-                </div>
-            </div>
-        }
+        <select class="filter-select" id="priorityFilter">
+            <option value="all">All Priorities</option>
+            <option value="high">High Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="low">Low Priority</option>
+        </select>
+        <button class="btn-clear-filters" onclick="clearProjectFilters()" title="Clear all filters">
+            <i class="fas fa-times"></i>
+            <span>Clear</span>
+        </button>
+        <div class="view-toggles">
+            <button class="view-toggle active" data-view="grid" title="Grid View">
+                <i class="fas fa-th"></i>
+            </button>
+            <button class="view-toggle" data-view="list" title="List View">
+                <i class="fas fa-list"></i>
+            </button>
+        </div>
     </div>
 </div>
 
-<!-- Modal for Adding Project -->
-<div class="modal fade" id="addProjectModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+<!-- Projects Grid -->
+<div class="projects-grid" id="projectsContainer">
+    <div class="loading-state" id="loadingState">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <h5>Loading Company Projects...</h5>
+        <p>Please wait while we fetch your team's projects.</p>
+    </div>
+</div>
+
+<!-- Empty State -->
+<div class="empty-projects" id="emptyState" style="display: none;">
+    <div class="empty-icon">
+        <i class="fas fa-project-diagram"></i>
+    </div>
+    <h4>No Company Projects Yet</h4>
+    <p>Get started by creating your team's first project. Projects will be visible to all team members for seamless collaboration.</p>
+    <button class="btn-modern btn-add-project" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+        <i class="fas fa-plus"></i>
+        Create Your Team's First Project
+    </button>
+</div>
+
+<!-- Permission Error State -->
+<div class="permission-error" id="permissionError" style="display: none;">
+    <div class="error-icon">
+        <i class="fas fa-shield-alt"></i>
+    </div>
+    <h4>Database Access Denied</h4>
+    <p>Please update your Firestore security rules to allow team collaboration.</p>
+    <div class="error-details">
+        <h6>Firestore Rules for Team Collaboration:</h6>
+        <div class="code-block">
+            <pre><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}</code></pre>
+        </div>
+    </div>
+    <button class="btn-modern btn-secondary" onclick="refreshProjects()">
+        <i class="fas fa-sync-alt"></i> Try Again
+    </button>
+</div>
+
+<!-- Add Project Modal -->
+<div class="modal fade modal-modern" id="addProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add New Project</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle"></i>
+                    Create New Team Project
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form method="post">
-                    <div class="mb-3">
-                        <label class="form-label">Project Name</label>
-                        <input type="text" name="projectName" class="form-control" placeholder="Enter project name" required>
+                <form id="createProjectForm">
+                    <div class="form-floating">
+                        <input type="text" name="Name" class="form-control" id="projectName" placeholder="Project Name" required>
+                        <label for="projectName"><i class="fas fa-rocket"></i> Project Name</label>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Deadline</label>
-                        <input type="date" name="projectDeadline" class="form-control" required>
+                    
+                    <div class="form-floating">
+                        <input type="date" name="Deadline" class="form-control" id="projectDeadline" required>
+                        <label for="projectDeadline"><i class="fas fa-calendar"></i> Deadline</label>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea name="projectDescription" class="form-control" rows="3" placeholder="Project details" required></textarea>
+                    
+                    <div class="form-floating">
+                        <textarea name="Description" class="form-control" id="projectDescription" 
+                                  style="height: 120px" placeholder="Project Description" required></textarea>
+                        <label for="projectDescription"><i class="fas fa-align-left"></i> Project Description</label>
                     </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">Add Project</button>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select name="Status" class="form-control" id="projectStatus">
+                                    <option value="Planning">Planning</option>
+                                    <option value="Active">Active</option>
+                                    <option value="OnHold">On Hold</option>
+                                </select>
+                                <label for="projectStatus"><i class="fas fa-flag"></i> Status</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select name="Priority" class="form-control" id="projectPriority">
+                                    <option value="Low">Low Priority</option>
+                                    <option value="Medium" selected>Medium Priority</option>
+                                    <option value="High">High Priority</option>
+                                </select>
+                                <label for="projectPriority"><i class="fas fa-exclamation-circle"></i> Priority</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-floating">
+                        <input type="number" name="Progress" class="form-control" id="projectProgress" 
+                               min="0" max="100" value="0">
+                        <label for="projectProgress"><i class="fas fa-chart-line"></i> Initial Progress (%)</label>
                     </div>
                 </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-modern btn-add-project" onclick="createProject()">
+                    <i class="fas fa-save"></i> Create Project
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div class="modal fade modal-modern" id="editProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    Edit Team Project
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProjectForm">
+                    <input type="hidden" id="editProjectId">
+                    
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="editProjectName" placeholder="Project Name" required>
+                        <label for="editProjectName"><i class="fas fa-rocket"></i> Project Name</label>
+                    </div>
+                    
+                    <div class="form-floating">
+                        <input type="date" class="form-control" id="editProjectDeadline" required>
+                        <label for="editProjectDeadline"><i class="fas fa-calendar"></i> Deadline</label>
+                    </div>
+                    
+                    <div class="form-floating">
+                        <textarea class="form-control" id="editProjectDescription" 
+                                  style="height: 120px" placeholder="Project Description" required></textarea>
+                        <label for="editProjectDescription"><i class="fas fa-align-left"></i> Project Description</label>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-control" id="editProjectStatus">
+                                    <option value="Planning">Planning</option>
+                                    <option value="Active">Active</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="OnHold">On Hold</option>
+                                </select>
+                                <label for="editProjectStatus"><i class="fas fa-flag"></i> Status</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-control" id="editProjectPriority">
+                                    <option value="Low">Low Priority</option>
+                                    <option value="Medium">Medium Priority</option>
+                                    <option value="High">High Priority</option>
+                                </select>
+                                <label for="editProjectPriority"><i class="fas fa-exclamation-circle"></i> Priority</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-floating">
+                        <input type="number" class="form-control" id="editProjectProgress" 
+                               min="0" max="100">
+                        <label for="editProjectProgress"><i class="fas fa-chart-line"></i> Progress (%)</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-modern btn-edit-project" onclick="updateProject()">
+                    <i class="fas fa-save"></i> Update Project
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script>
-        console.log('🌍 Projects script starting...');
-        
-        // Wait for global Firebase to be ready
-        function waitForProjectsFirebase(callback) {
-            if (window.firebaseAuth) {
-                callback();
-            } else {
-                setTimeout(function() { waitForProjectsFirebase(callback); }, 100);
-            }
-        }
-        
-        // Setup projects-specific functionality
-        function setupProjects() {
-            console.log('🌍 Setting up projects');
-            
-            if (!window.firebaseAuth) {
-                console.error('❌ Firebase auth not available in projects');
-                return;
-            }
-            
-            // Authentication check for projects
-            window.firebaseAuth.onAuthStateChanged(function(user) {
-                if (!user) {
-                    console.log('❌ No user in projects, redirecting');
-                    window.location.href = '/';
-                } else {
-                    console.log('✅ Projects user authenticated:', user.email);
-                    setupProjectHandlers();
-                }
-            });
-        }
-        
-        // Setup project functionality
-        function setupProjectHandlers() {
-            // Filter functionality
-            const statusFilter = document.getElementById('statusFilter');
-            if (statusFilter) {
-                statusFilter.addEventListener('change', function() {
-                    const filterValue = this.value.toLowerCase();
-                    const cards = document.querySelectorAll('.project-card');
-                    
-                    cards.forEach(card => {
-                        const status = card.getAttribute('data-status');
-                        if (filterValue === 'all' || status === filterValue) {
-                            card.parentElement.style.display = 'block';
-                        } else {
-                            card.parentElement.style.display = 'none';
-                        }
-                    });
-                });
-            }
-            
-            // Search functionality
-            const searchInput = document.querySelector('input[placeholder="Search projects..."]');
-            if (searchInput) {
-                searchInput.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    const cards = document.querySelectorAll('.project-card');
-                    
-                    cards.forEach(card => {
-                        const title = card.querySelector('.card-title').textContent.toLowerCase();
-                        const description = card.querySelector('.card-text').textContent.toLowerCase();
-                        
-                        if (title.includes(searchTerm) || description.includes(searchTerm)) {
-                            card.parentElement.style.display = 'block';
-                        } else {
-                            card.parentElement.style.display = 'none';
-                        }
-                    });
-                });
-            }
-            
-            console.log('✅ Project handlers setup complete');
-        }
-        
-        // Initialize everything when Firebase is ready
-        waitForProjectsFirebase(function() {
-            console.log('✅ Firebase ready for projects');
-            setupProjects();
-            console.log('✅ Projects setup complete');
-        });
-        
-        console.log('🌍 Projects script loaded');
-    </script>
+    <script src="~/js/projects.js" asp-append-version="true"></script>
 }

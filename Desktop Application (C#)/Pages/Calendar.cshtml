@@ -1,129 +1,249 @@
 ﻿@page
-@model Wilgproject.Pages.CalendarModel
+@model Wilproject.Pages.CalendarModel
 @{
     ViewData["Title"] = "Calendar";
 }
 
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/calendar.css" asp-append-version="true" />
 
-<style>
-    .calendar-container {
-        margin: 20px 0;
-    }
+<!-- Calendar Header -->
+<div class="calendar-header">
+    <div class="calendar-header-content">
+        <h1 class="calendar-title"><i class="fas fa-calendar-alt"></i> Calendar</h1>
+        <p class="calendar-subtitle">Plan, schedule, and track your events and meetings</p>
+    </div>
+</div>
 
-    #calendar {
-        max-width: 900px;
-        margin: auto;
-        background: #fff;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
-    }
+<!-- Calendar Statistics -->
+<div class="calendar-stats">
+    <div class="calendar-stat-card events">
+        <div class="stat-number" id="total-events">0</div>
+        <div class="stat-label">Total Events</div>
+    </div>
+    <div class="calendar-stat-card today">
+        <div class="stat-number" id="today-events">0</div>
+        <div class="stat-label">Today</div>
+    </div>
+    <div class="calendar-stat-card upcoming">
+        <div class="stat-number" id="upcoming-events">0</div>
+        <div class="stat-label">This Week</div>
+    </div>
+    <div class="calendar-stat-card overdue">
+        <div class="stat-number" id="overdue-events">0</div>
+        <div class="stat-label">Past Due</div>
+    </div>
+</div>
 
-    .modal-header {
-        color: white;
-    }
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <a href="#" class="quick-action" data-bs-toggle="modal" data-bs-target="#eventModal">
+        <i class="fas fa-plus"></i>
+        <span>Add Event</span>
+    </a>
+    <a href="#" class="quick-action" onclick="goToToday()">
+        <i class="fas fa-calendar-day"></i>
+        <span>Go to Today</span>
+    </a>
+    <a href="#" class="quick-action" onclick="toggleView()">
+        <i class="fas fa-th"></i>
+        <span>Change View</span>
+    </a>
+    <a href="#" class="quick-action" onclick="refreshCalendar()">
+        <i class="fas fa-sync-alt"></i>
+        <span>Refresh</span>
+    </a>
+</div>
 
-    .add-header {
-        background-color: #198754; /* green */
-    }
+<!-- Loading State -->
+<div class="loading-calendar" id="loadingCalendar">
+    <div class="text-center py-5">
+        <i class="fas fa-spinner fa-spin fa-3x text-muted mb-3"></i>
+        <h5>Loading Calendar...</h5>
+        <p class="text-muted">Please wait while we load your events.</p>
+    </div>
+</div>
 
-    .edit-header {
-        background-color: #0d6efd; /* blue */
-    }
+<!-- Calendar Container -->
+<div class="calendar-container" id="calendarContainer" style="display: none;">
+    <div class="calendar-wrapper">
+        <div id="calendar"></div>
+    </div>
+</div>
 
-    .delete-header {
-        background-color: #dc3545; /* red */
-    }
-    
-    /* Ensure logout button has consistent red styling */
-    #sidebar-logout-btn {
-        background: #dc3545 !important;
-        border: 1px solid #dc3545 !important;
-        color: white !important;
-        font-weight: 500 !important;
-        width: 100% !important;
-    }
-    
-    #sidebar-logout-btn:hover {
-        background: #c82333 !important;
-        border-color: #c82333 !important;
-        color: white !important;
-    }
-    
-    /* Override any Bootstrap conflicts */
-    .sidebar .logout-btn {
-        background: #dc3545 !important;
-        border: 1px solid #dc3545 !important;
-        color: white !important;
-    }
-    
-    .sidebar .logout-btn:hover {
-        background: #c82333 !important;
-        border-color: #c82333 !important;
-        color: white !important;
-    }
-</style>
-
-<div class="calendar-container">
-    <h2 class="text-center mb-4">Calendar</h2>
-    <div id="calendar"></div>
+<!-- Empty State -->
+<div class="empty-calendar" id="emptyCalendar" style="display: none;">
+    <div class="text-center py-5">
+        <div class="empty-icon">
+            <i class="fas fa-calendar-plus"></i>
+        </div>
+        <h4>No Events Scheduled</h4>
+        <p>Get started by adding your first event to the calendar!</p>
+        <button class="btn-modern-calendar btn-add-event" data-bs-toggle="modal" data-bs-target="#eventModal">
+            <i class="fas fa-plus"></i> Add Your First Event
+        </button>
+    </div>
 </div>
 
 <!-- Add Event Modal -->
-<div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade modal-modern" id="eventModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-3 shadow">
+        <div class="modal-content">
             <div class="modal-header add-header">
-                <h5 class="modal-title">Add New Event</h5>
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle"></i>
+                    Add New Event
+                </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="text" id="eventTitle" class="form-control" placeholder="Enter event title..." />
+                <form id="eventForm">
+                    <div class="form-floating">
+                        <input type="text" id="eventTitle" class="form-control" placeholder="Enter event title..." required />
+                        <label for="eventTitle"><i class="fas fa-heading"></i> Event Title</label>
+                    </div>
+                    
+                    <div class="form-floating">
+                        <textarea id="eventDescription" class="form-control" placeholder="Event description..." style="height: 100px"></textarea>
+                        <label for="eventDescription"><i class="fas fa-align-left"></i> Description (Optional)</label>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="datetime-local" id="eventStart" class="form-control" required />
+                                <label for="eventStart"><i class="fas fa-play"></i> Start Date & Time</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="datetime-local" id="eventEnd" class="form-control" />
+                                <label for="eventEnd"><i class="fas fa-stop"></i> End Date & Time</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select id="eventCategory" class="form-control">
+                                    <option value="meeting">Meeting</option>
+                                    <option value="project">Project</option>
+                                    <option value="personal">Personal</option>
+                                    <option value="deadline">Deadline</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                <label for="eventCategory"><i class="fas fa-tags"></i> Category</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select id="eventPriority" class="form-control">
+                                    <option value="low">Low Priority</option>
+                                    <option value="medium" selected>Medium Priority</option>
+                                    <option value="high">High Priority</option>
+                                </select>
+                                <label for="eventPriority"><i class="fas fa-exclamation-circle"></i> Priority</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="allDayEvent">
+                        <label class="form-check-label" for="allDayEvent">
+                            All Day Event
+                        </label>
+                    </div>
+                </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-success" id="saveEventBtn">Add Event</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-modern-calendar btn-add-event" id="saveEventBtn">
+                    <i class="fas fa-save"></i> Add Event
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Edit Event Modal -->
-<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade modal-modern" id="editModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-3 shadow">
+        <div class="modal-content">
             <div class="modal-header edit-header">
-                <h5 class="modal-title">Edit Event</h5>
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    Edit Event
+                </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="text" id="editEventTitle" class="form-control" />
+                <form id="editEventForm">
+                    <input type="hidden" id="editEventId">
+                    
+                    <div class="form-floating">
+                        <input type="text" id="editEventTitle" class="form-control" required />
+                        <label for="editEventTitle"><i class="fas fa-heading"></i> Event Title</label>
+                    </div>
+                    
+                    <div class="form-floating">
+                        <textarea id="editEventDescription" class="form-control" placeholder="Event description..." style="height: 100px"></textarea>
+                        <label for="editEventDescription"><i class="fas fa-align-left"></i> Description</label>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="datetime-local" id="editEventStart" class="form-control" required />
+                                <label for="editEventStart"><i class="fas fa-play"></i> Start Date & Time</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="datetime-local" id="editEventEnd" class="form-control" />
+                                <label for="editEventEnd"><i class="fas fa-stop"></i> End Date & Time</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select id="editEventCategory" class="form-control">
+                                    <option value="meeting">Meeting</option>
+                                    <option value="project">Project</option>
+                                    <option value="personal">Personal</option>
+                                    <option value="deadline">Deadline</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                <label for="editEventCategory"><i class="fas fa-tags"></i> Category</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select id="editEventPriority" class="form-control">
+                                    <option value="low">Low Priority</option>
+                                    <option value="medium">Medium Priority</option>
+                                    <option value="high">High Priority</option>
+                                </select>
+                                <label for="editEventPriority"><i class="fas fa-exclamation-circle"></i> Priority</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-danger" id="deleteFromEditBtn">Delete</button>
-                <button class="btn btn-primary" id="updateEventBtn">Save Changes</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-3 shadow">
-            <div class="modal-header delete-header">
-                <h5 class="modal-title">Delete Event</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                Are you sure you want to delete this event?
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-modern-calendar btn-delete-event" id="deleteFromEditBtn">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+                <button type="button" class="btn-modern-calendar btn-edit-event" id="updateEventBtn">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
             </div>
         </div>
     </div>
@@ -134,9 +254,16 @@
     <script>
         console.log('📅 Calendar script starting...');
         
+        var calendar = null;
+        var selectedInfo = null;
+        var selectedEvent = null;
+        var currentUser = null;
+        var db = null;
+        var events = [];
+        
         // Wait for global Firebase to be ready
         function waitForCalendarFirebase(callback) {
-            if (window.firebaseAuth) {
+            if (window.firebaseAuth && window.firebaseDB) {
                 callback();
             } else {
                 setTimeout(function() { waitForCalendarFirebase(callback); }, 100);
@@ -147,10 +274,12 @@
         function setupCalendar() {
             console.log('📅 Setting up calendar');
             
-            if (!window.firebaseAuth) {
-                console.error('❌ Firebase auth not available in calendar');
+            if (!window.firebaseAuth || !window.firebaseDB) {
+                console.error('❌ Firebase not available in calendar');
                 return;
             }
+            
+            db = window.firebaseDB;
             
             // Authentication check for calendar
             window.firebaseAuth.onAuthStateChanged(function(user) {
@@ -158,112 +287,484 @@
                     console.log('❌ No user in calendar, redirecting');
                     window.location.href = '/';
                 } else {
+                    currentUser = user;
                     console.log('✅ Calendar user authenticated:', user.email);
-                    initializeCalendar();
-                    
-                    // Ensure logout button styling after auth
-                    setTimeout(function() {
-                        var logoutBtn = document.getElementById('sidebar-logout-btn');
-                        if (logoutBtn) {
-                            logoutBtn.style.background = '#dc3545';
-                            logoutBtn.style.borderColor = '#dc3545';
-                            logoutBtn.style.color = 'white';
-                            console.log('✅ Logout button styling applied');
-                        }
-                    }, 1000);
+                    loadEventsFromFirebase();
                 }
             });
+        }
+        
+        // Load events from Firebase
+        async function loadEventsFromFirebase() {
+            if (!db || !currentUser) return;
+            
+            showLoadingState(true);
+            
+            try {
+                console.log('📅 Loading events from Firebase...');
+                
+                // Simple query without orderBy to avoid composite index requirement
+                const snapshot = await db.collection('events')
+                    .where('userId', '==', currentUser.uid)
+                    .get();
+                
+                events = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Sort events by start date on the client side
+                events.sort((a, b) => {
+                    const dateA = new Date(a.start);
+                    const dateB = new Date(b.start);
+                    return dateA - dateB;
+                });
+                
+                console.log('✅ Events loaded and sorted:', events.length);
+                
+                if (events.length === 0) {
+                    // Show empty calendar instead of empty state so users can still add events
+                    initializeCalendar();
+                    showNotification('📅 Calendar ready! Click on any date to add your first event.', 'info');
+                } else {
+                    initializeCalendar();
+                }
+                
+                updateCalendarStats();
+                
+            } catch (error) {
+                console.error('❌ Error loading events:', error);
+                
+                // Show empty state if there's an error
+                showEmptyState();
+                
+                // Show user-friendly error message
+                if (error.code === 'failed-precondition') {
+                    showNotification('ℹ️ Calendar loaded in simple mode. Some features may be limited.', 'info');
+                } else {
+                    showNotification('⚠️ Error loading events. Please try refreshing.', 'warning');
+                }
+            } finally {
+                showLoadingState(false);
+            }
         }
         
         // Initialize FullCalendar
         function initializeCalendar() {
             console.log('📅 Initializing FullCalendar');
             
-            var calendarEl = document.getElementById('calendar');
-            var selectedInfo = null;
-            var selectedEvent = null;
-
+            const calendarEl = document.getElementById('calendar');
             if (!calendarEl) {
                 console.error('❌ Calendar element not found');
                 return;
             }
+            
+            // Show calendar container
+            document.getElementById('calendarContainer').style.display = 'block';
+            document.getElementById('emptyCalendar').style.display = 'none';
 
-            var calendar = new FullCalendar.Calendar(calendarEl, {
+            calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
-                initialDate: '2025-08-01',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
                 selectable: true,
                 editable: true,
-                events: [
-                    { title: 'Event 1', start: '2025-08-01' },
-                    { title: 'Event 2', start: '2025-08-05', end: '2025-08-07' }
-                ],
+                dayMaxEvents: true,
+                height: 'auto',
+                events: events.map(event => ({
+                    id: event.id,
+                    title: event.title,
+                    start: event.start,
+                    end: event.end,
+                    allDay: event.allDay || false,
+                    backgroundColor: getCategoryColor(event.category),
+                    borderColor: getCategoryColor(event.category),
+                    extendedProps: {
+                        description: event.description,
+                        category: event.category,
+                        priority: event.priority
+                    }
+                })),
                 select: function (info) {
                     selectedInfo = info;
-                    var myModal = new bootstrap.Modal(document.getElementById('eventModal'));
-                    myModal.show();
+                    
+                    // Pre-fill start and end times
+                    const start = new Date(info.start);
+                    const end = new Date(info.end || info.start);
+                    
+                    // If it's an all-day selection, set reasonable times
+                    if (info.allDay) {
+                        start.setHours(9, 0, 0, 0);
+                        end.setHours(10, 0, 0, 0);
+                    }
+                    
+                    document.getElementById('eventStart').value = formatDateTimeLocal(start);
+                    document.getElementById('eventEnd').value = formatDateTimeLocal(end);
+                    document.getElementById('allDayEvent').checked = info.allDay;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('eventModal'));
+                    modal.show();
                 },
                 eventClick: function (info) {
                     selectedEvent = info.event;
-                    document.getElementById("editEventTitle").value = selectedEvent.title;
-                    var editModal = new bootstrap.Modal(document.getElementById('editModal'));
-                    editModal.show();
+                    const eventData = events.find(e => e.id === info.event.id);
+                    
+                    if (eventData) {
+                        document.getElementById('editEventId').value = eventData.id;
+                        document.getElementById('editEventTitle').value = eventData.title;
+                        document.getElementById('editEventDescription').value = eventData.description || '';
+                        document.getElementById('editEventStart').value = formatDateTimeLocal(new Date(eventData.start));
+                        document.getElementById('editEventEnd').value = eventData.end ? formatDateTimeLocal(new Date(eventData.end)) : '';
+                        document.getElementById('editEventCategory').value = eventData.category || 'other';
+                        document.getElementById('editEventPriority').value = eventData.priority || 'medium';
+                        
+                        const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+                        editModal.show();
+                    }
+                },
+                eventDidMount: function(info) {
+                    // Add priority indicator
+                    const priority = info.event.extendedProps.priority;
+                    if (priority === 'high') {
+                        info.el.style.border = '2px solid #ef4444';
+                    }
                 }
             });
             
             calendar.render();
+            setupEventHandlers();
             console.log('✅ FullCalendar initialized');
-
-            // Event handlers
-            setupEventHandlers(calendar, selectedInfo, selectedEvent);
+        }
+        
+        // Save event
+        async function saveEvent() {
+            const title = document.getElementById('eventTitle').value.trim();
+            const description = document.getElementById('eventDescription').value.trim();
+            const startTime = document.getElementById('eventStart').value;
+            const endTime = document.getElementById('eventEnd').value;
+            const category = document.getElementById('eventCategory').value;
+            const priority = document.getElementById('eventPriority').value;
+            const allDay = document.getElementById('allDayEvent').checked;
+            
+            if (!title || !startTime) {
+                showNotification('⚠️ Please fill in the required fields', 'warning');
+                return;
+            }
+            
+            // Validate dates
+            const startDate = new Date(startTime);
+            const endDate = endTime ? new Date(endTime) : startDate;
+            
+            if (endTime && endDate < startDate) {
+                showNotification('⚠️ End time cannot be before start time', 'warning');
+                return;
+            }
+            
+            const eventData = {
+                title: title,
+                description: description,
+                start: startTime,
+                end: endTime || startTime,
+                allDay: allDay,
+                category: category,
+                priority: priority,
+                userId: currentUser.uid,
+                createdAt: new Date().toISOString(),
+                // Add timestamp for easier querying without composite index
+                startTimestamp: startDate.getTime(),
+                endTimestamp: endDate.getTime()
+            };
+            
+            try {
+                console.log('📅 Saving event:', eventData);
+                
+                const docRef = await db.collection('events').add(eventData);
+                console.log('✅ Event saved with ID:', docRef.id);
+                
+                showNotification('✅ Event added successfully!', 'success');
+                
+                // Clear form
+                document.getElementById('eventForm').reset();
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('eventModal'));
+                modal.hide();
+                
+                // Reload events
+                await loadEventsFromFirebase();
+                
+            } catch (error) {
+                console.error('❌ Error saving event:', error);
+                showNotification('❌ Error saving event: ' + error.message, 'error');
+            }
+        }
+        
+        // Update event
+        async function updateEvent() {
+            const eventId = document.getElementById('editEventId').value;
+            const title = document.getElementById('editEventTitle').value.trim();
+            const description = document.getElementById('editEventDescription').value.trim();
+            const startTime = document.getElementById('editEventStart').value;
+            const endTime = document.getElementById('editEventEnd').value;
+            const category = document.getElementById('editEventCategory').value;
+            const priority = document.getElementById('editEventPriority').value;
+            
+            if (!title || !startTime || !eventId) {
+                showNotification('⚠️ Please fill in the required fields', 'warning');
+                return;
+            }
+            
+            const eventData = {
+                title: title,
+                description: description,
+                start: startTime,
+                end: endTime || startTime,
+                category: category,
+                priority: priority,
+                updatedAt: new Date().toISOString()
+            };
+            
+            try {
+                await db.collection('events').doc(eventId).update(eventData);
+                console.log('✅ Event updated:', eventId);
+                
+                showNotification('✅ Event updated successfully!', 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+                modal.hide();
+                
+                // Reload events
+                await loadEventsFromFirebase();
+                
+            } catch (error) {
+                console.error('Error updating event:', error);
+                showNotification('❌ Error updating event', 'error');
+            }
+        }
+        
+        // Delete event
+        async function deleteEvent() {
+            const eventId = document.getElementById('editEventId').value;
+            
+            if (!eventId) return;
+            
+            if (!confirm('Are you sure you want to delete this event?')) {
+                return;
+            }
+            
+            try {
+                await db.collection('events').doc(eventId).delete();
+                console.log('✅ Event deleted:', eventId);
+                
+                showNotification('✅ Event deletedSuccessfully!', 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+                modal.hide();
+                
+                // Reload events
+                await loadEventsFromFirebase();
+                
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                showNotification('❌ Error deleting event', 'error');
+            }
         }
         
         // Setup event handlers
-        function setupEventHandlers(calendar, selectedInfo, selectedEvent) {
+        function setupEventHandlers() {
             // Save Event
-            document.getElementById("saveEventBtn").addEventListener("click", function () {
-                var title = document.getElementById("eventTitle").value;
-                if (title && selectedInfo) {
-                    calendar.addEvent({
-                        title: title,
-                        start: selectedInfo.start,
-                        end: selectedInfo.end,
-                        allDay: selectedInfo.allDay
-                    });
-                }
-                document.getElementById("eventTitle").value = "";
-                selectedInfo = null;
-                var modal = bootstrap.Modal.getInstance(document.getElementById('eventModal'));
-                modal.hide();
-            });
-
+            document.getElementById('saveEventBtn').addEventListener('click', saveEvent);
+            
             // Update Event
-            document.getElementById("updateEventBtn").addEventListener("click", function () {
-                var newTitle = document.getElementById("editEventTitle").value;
-                if (selectedEvent && newTitle) {
-                    selectedEvent.setProp("title", newTitle);
+            document.getElementById('updateEventBtn').addEventListener('click', updateEvent);
+            
+            // Delete Event
+            document.getElementById('deleteFromEditBtn').addEventListener('click', deleteEvent);
+            
+            // All day event toggle
+            document.getElementById('allDayEvent').addEventListener('change', function() {
+                const startInput = document.getElementById('eventStart');
+                const endInput = document.getElementById('eventEnd');
+                
+                if (this.checked) {
+                    // Convert to date only
+                    if (startInput.value) {
+                        startInput.type = 'date';
+                        startInput.value = startInput.value.split('T')[0];
+                    }
+                    if (endInput.value) {
+                        endInput.type = 'date';
+                        endInput.value = endInput.value.split('T')[0];
+                    }
+                } else {
+                    // Convert back to datetime
+                    startInput.type = 'datetime-local';
+                    endInput.type = 'datetime-local';
                 }
-                selectedEvent = null;
-                var modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
-                modal.hide();
             });
-
-            // Delete from Edit Modal
-            document.getElementById("deleteFromEditBtn").addEventListener("click", function () {
-                var editModal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
-                editModal.hide();
-                var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-                deleteModal.show();
-            });
-
-            // Confirm Delete
-            document.getElementById("confirmDeleteBtn").addEventListener("click", function () {
-                if (selectedEvent) {
-                    selectedEvent.remove();
-                    selectedEvent = null;
+        }
+        
+        // Utility functions
+        function formatDateTimeLocal(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+        
+        function getCategoryColor(category) {
+            const colors = {
+                'meeting': '#667eea',
+                'project': '#4facfe',
+                'deadline': '#f093fb',
+                'personal': '#43e97b',
+                'other': '#64748b'
+            };
+            return colors[category] || colors.other;
+        }
+        
+        // Update calendar statistics
+        function updateCalendarStats() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            let todayEvents = 0;
+            let upcomingEvents = 0;
+            let overdueEvents = 0;
+            
+            const nextWeek = new Date(today);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            
+            events.forEach(event => {
+                const eventDate = new Date(event.start);
+                eventDate.setHours(0, 0, 0, 0);
+                
+                // Today's events
+                if (eventDate.getTime() === today.getTime()) {
+                    todayEvents++;
                 }
-                var modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
-                modal.hide();
+                
+                // This week's events
+                if (eventDate >= today && eventDate <= nextWeek) {
+                    upcomingEvents++;
+                }
+                
+                // Overdue events
+                if (eventDate < today) {
+                    overdueEvents++;
+                }
             });
+            
+            document.getElementById('total-events').textContent = events.length;
+            document.getElementById('today-events').textContent = todayEvents;
+            document.getElementById('upcoming-events').textContent = upcomingEvents;
+            document.getElementById('overdue-events').textContent = overdueEvents;
+        }
+        
+        // Quick action functions
+        function goToToday() {
+            if (calendar) {
+                calendar.today();
+            }
+        }
+        
+        let currentView = 'dayGridMonth';
+        function toggleView() {
+            if (!calendar) return;
+            
+            const views = ['dayGridMonth', 'timeGridWeek', 'timeGridDay'];
+            const currentIndex = views.indexOf(currentView);
+            const nextIndex = (currentIndex + 1) % views.length;
+            currentView = views[nextIndex];
+            
+            calendar.changeView(currentView);
+            
+            const viewNames = {
+                'dayGridMonth': 'Month View',
+                'timeGridWeek': 'Week View',
+                'timeGridDay': 'Day View'
+            };
+            
+            showNotification(`📅 Switched to ${viewNames[currentView]}`, 'info');
+        }
+        
+        // Refresh calendar
+        async function refreshCalendar() {
+            showNotification('🔄 Refreshing calendar...', 'info');
+            await loadEventsFromFirebase();
+            showNotification('✅ Calendar refreshed!', 'success');
+        }
+        
+        // UI state functions
+        function showLoadingState(show) {
+            const loading = document.getElementById('loadingCalendar');
+            const container = document.getElementById('calendarContainer');
+            const empty = document.getElementById('emptyCalendar');
+            
+            if (show) {
+                loading.style.display = 'block';
+                container.style.display = 'none';
+                empty.style.display = 'none';
+            } else {
+                loading.style.display = 'none';
+            }
+        }
+        
+        function showEmptyState() {
+            const loading = document.getElementById('loadingCalendar');
+            const container = document.getElementById('calendarContainer');
+            const empty = document.getElementById('emptyCalendar');
+            
+            loading.style.display = 'none';
+            container.style.display = 'none';
+            empty.style.display = 'block';
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                max-width: 300px;
+                font-weight: 500;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
         }
         
         // Initialize everything when Firebase is ready

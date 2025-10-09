@@ -1,96 +1,169 @@
-﻿@* <!--
-TODO (Backend):
-
-- Connect this Messages section to the Messages page data.
-- When a user posts an announcement on the Messages page:
-    1. Save it to the database.
-    2. Fetch and display it here on the Dashboard automatically.
-- Ensure clicking "Post Announcement" redirects to the Messages page or opens a form,
-  and after posting, the new message should appear in this section without refreshing.
---> *@
-
-@page
+﻿@page
 @model Wilproject.Pages.MessagesModel
 @{
     ViewData["Title"] = "Messages";
 }
 
-<div class="container mt-5">
-    <!-- Add New Message Card -->
-    <div class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-gradient text-white rounded-top-4"
-             style="background: linear-gradient(90deg, #6a11cb, #2575fc);">
-            <h3 class="mb-0">Messages</h3>
-            <small>Manage your messages and announcements</small>
+<link rel="stylesheet" href="~/css/messages.css" asp-append-version="true" />
+
+<!-- Messages Header -->
+<div class="messages-header">
+    <div class="messages-header-content">
+        <h1 class="messages-title"><i class="fas fa-comments"></i> Messages</h1>
+        <p class="messages-subtitle">Communicate with your team and manage announcements</p>
+    </div>
+</div>
+
+<!-- Message Statistics -->
+<div class="message-stats">
+    <div class="message-stat-card total">
+        <div class="stat-number" id="total-messages">0</div>
+        <div class="stat-label">Total Messages</div>
+    </div>
+    <div class="message-stat-card unread">
+        <div class="stat-number" id="unread-messages">0</div>
+        <div class="stat-label">Unread</div>
+    </div>
+    <div class="message-stat-card sent">
+        <div class="stat-number" id="sent-messages">0</div>
+        <div class="stat-label">Sent</div>
+    </div>
+    <div class="message-stat-card draft">
+        <div class="stat-number" id="draft-messages">0</div>
+        <div class="stat-label">Drafts</div>
+    </div>
+</div>
+
+<!-- Main Messages Container -->
+<div class="messages-container">
+    <!-- Compose Message Card -->
+    <div class="message-card compose-card">
+        <div class="card-header-modern">
+            <h3 class="card-title"><i class="fas fa-edit"></i> Compose Message</h3>
+            <p class="card-subtitle">Create a new message or announcement</p>
         </div>
 
-        <div class="card-body p-4">
-            <!-- Add New Message -->
-            <h5 class="mb-4">Create New Message</h5>
+        <form id="messageForm">
+            <!-- Message Title -->
+            <div class="form-floating">
+                <input type="text" id="MessageTitle" class="form-control" placeholder="Message Title" required />
+                <label for="MessageTitle"><i class="fas fa-heading"></i> Message Title</label>
+            </div>
 
-            <form>
-                <!-- Title -->
-                <div class="form-floating mb-3">
-                    <input type="text" id="MessageTitle" class="form-control rounded-3 shadow-sm"
-                           placeholder="Message Title" required />
-                    <label for="MessageTitle">Title</label>
-                </div>
+            <!-- Message Content -->
+            <div class="form-floating">
+                <textarea id="MessageContent" class="form-control" placeholder="Write your message here..." 
+                          style="height: 150px;" required></textarea>
+                <label for="MessageContent"><i class="fas fa-pen"></i> Message Content</label>
+            </div>
 
-                <!-- Content -->
-                <div class="form-floating mb-3">
-                    <textarea id="MessageContent" class="form-control rounded-3 shadow-sm"
-                              placeholder="Write your message here..." style="height: 150px;" required></textarea>
-                    <label for="MessageContent">Content</label>
+            <!-- Priority and Category Row -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-floating">
+                        <select id="Priority" class="form-control" required>
+                            <option value="">-- Select Priority --</option>
+                            <option value="High">High Priority</option>
+                            <option value="Medium">Medium Priority</option>
+                            <option value="Low">Low Priority</option>
+                        </select>
+                        <label for="Priority"><i class="fas fa-exclamation-circle"></i> Priority Level</label>
+                    </div>
                 </div>
+                <div class="col-md-6">
+                    <div class="form-floating">
+                        <select id="Category" class="form-control">
+                            <option value="announcement">Announcement</option>
+                            <option value="meeting">Meeting</option>
+                            <option value="project">Project Update</option>
+                            <option value="general">General</option>
+                        </select>
+                        <label for="Category"><i class="fas fa-tags"></i> Category</label>
+                    </div>
+                </div>
+            </div>
 
-                <!-- Priority -->
-                <div class="form-floating mb-3">
-                    <select id="Priority" class="form-select rounded-3 shadow-sm">
-                        <option selected disabled>-- Select Priority --</option>
-                        <option value="High">High</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Low">Low</option>
-                    </select>
-                    <label for="Priority">Priority</label>
-                </div>
-
-                <!-- Buttons -->
-                <div class="d-flex justify-content-end">
-                    <button type="reset" class="btn btn-outline-secondary me-2 px-4 rounded-3">Clear</button>
-                    <button type="submit" class="btn btn-primary px-4 rounded-3 shadow">
-                        <i class="bi bi-send"></i> Send Message
-                    </button>
-                </div>
-            </form>
-        </div>
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-end gap-2">
+                <button type="reset" class="btn-modern-message btn-clear">
+                    <i class="fas fa-eraser"></i> Clear
+                </button>
+                <button type="button" class="btn-modern-message btn-clear" id="saveDraftBtn">
+                    <i class="fas fa-save"></i> Save Draft
+                </button>
+                <button type="submit" class="btn-modern-message btn-send">
+                    <i class="fas fa-paper-plane"></i> Send Message
+                </button>
+            </div>
+        </form>
     </div>
 
-    <!-- Messages List -->
-    <div class="card shadow-lg border-0 rounded-4 mt-4">
-        <div class="card-header bg-light rounded-top-4">
-            <h5 class="mb-0">Recent Messages</h5>
+    <!-- Messages List Card -->
+    <div class="message-card messages-list-card">
+        <div class="card-header-modern">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="card-title"><i class="fas fa-inbox"></i> Recent Messages</h3>
+                    <p class="card-subtitle">View and manage your messages</p>
+                </div>
+                <button class="btn-modern-message btn-secondary" onclick="refreshMessages()" id="refreshMessagesBtn">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
         </div>
-        <div class="card-body">
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>Meeting Reminder</strong> - Don't forget the team meeting tomorrow.
-                    </div>
-                    <span class="badge bg-danger">High</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>Event Update</strong> - MenStandTall conference confirmed.
-                    </div>
-                    <span class="badge bg-success">Low</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>Project Update</strong> - Weekly progress report available.
-                    </div>
-                    <span class="badge bg-warning">Medium</span>
-                </li>
-            </ul>
+
+        <!-- Loading State -->
+        <div class="loading-messages" id="loadingMessages">
+            <div class="text-center py-4">
+                <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                <h5>Loading Messages...</h5>
+                <p class="text-muted">Please wait while we fetch your messages.</p>
+            </div>
+        </div>
+
+        <!-- Messages List -->
+        <div class="messages-list" id="messagesList" style="display: none;">
+            <!-- Messages will be loaded here dynamically -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-messages" id="emptyMessages" style="display: none;">
+            <div class="text-center py-5">
+                <div class="empty-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <h4>No Messages Yet</h4>
+                <p>Start a conversation by sending your first message!</p>
+                <button class="btn-modern-message btn-send" onclick="focusMessageForm()">
+                    <i class="fas fa-edit"></i> Compose Message
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Details Modal -->
+<div class="modal fade modal-modern" id="messageDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-envelope-open"></i>
+                    Message Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="messageDetailsBody">
+                <!-- Message details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button type="button" class="btn-modern-message btn-send" onclick="replyToMessage()">
+                    <i class="fas fa-reply"></i> Reply
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -99,9 +172,14 @@ TODO (Backend):
     <script>
         console.log('💬 Messages script starting...');
         
+        var currentUser = null;
+        var messages = [];
+        var db = null;
+        var drafts = [];
+        
         // Wait for global Firebase to be ready
         function waitForMessagesFirebase(callback) {
-            if (window.firebaseAuth) {
+            if (window.firebaseAuth && window.firebaseDB) {
                 callback();
             } else {
                 setTimeout(function() { waitForMessagesFirebase(callback); }, 100);
@@ -112,10 +190,12 @@ TODO (Backend):
         function setupMessages() {
             console.log('💬 Setting up messages');
             
-            if (!window.firebaseAuth) {
-                console.error('❌ Firebase auth not available in messages');
+            if (!window.firebaseAuth || !window.firebaseDB) {
+                console.error('❌ Firebase not available in messages');
                 return;
             }
+            
+            db = window.firebaseDB;
             
             // Authentication check for messages
             window.firebaseAuth.onAuthStateChanged(function(user) {
@@ -123,35 +203,502 @@ TODO (Backend):
                     console.log('❌ No user in messages, redirecting');
                     window.location.href = '/';
                 } else {
+                    currentUser = user;
                     console.log('✅ Messages user authenticated:', user.email);
                     setupMessageHandlers();
+                    loadMessagesFromFirebase();
+                    loadDraftsFromStorage();
                 }
             });
         }
         
+        // Load messages from Firebase
+        async function loadMessagesFromFirebase() {
+            if (!db || !currentUser) return;
+            
+            showLoadingState(true);
+            
+            try {
+                // Load sent messages
+                const sentSnapshot = await db.collection('messages')
+                    .where('authorId', '==', currentUser.uid)
+                    .orderBy('timestamp', 'desc')
+                    .get();
+                
+                // Load received messages (if implementing team messages)
+                const receivedSnapshot = await db.collection('messages')
+                    .where('recipientId', '==', currentUser.uid)
+                    .orderBy('timestamp', 'desc')
+                    .get();
+                
+                const sentMessages = sentSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    type: 'sent'
+                }));
+                
+                const receivedMessages = receivedSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    type: 'received'
+                }));
+                
+                messages = [...sentMessages, ...receivedMessages].sort((a, b) => 
+                    new Date(b.timestamp) - new Date(a.timestamp)
+                );
+                
+                console.log('✅ Messages loaded:', messages.length);
+                renderMessages();
+                updateMessageStats();
+                
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                showEmptyState();
+            } finally {
+                showLoadingState(false);
+            }
+        }
+        
         // Setup message form handlers
         function setupMessageHandlers() {
-            const form = document.querySelector('form');
+            const form = document.getElementById('messageForm');
+            const saveDraftBtn = document.getElementById('saveDraftBtn');
+            
+            // Send message form submission
             if (form) {
-                form.addEventListener('submit', function(e) {
+                form.addEventListener('submit', async function(e) {
                     e.preventDefault();
-                    
-                    const title = document.getElementById('MessageTitle').value.trim();
-                    const content = document.getElementById('MessageContent').value.trim();
-                    const priority = document.getElementById('Priority').value;
-                    
-                    if (title && content && priority) {
-                        console.log('📧 Sending message:', { title, content, priority });
-                        // TODO: Implement message sending to Firebase/database
-                        alert('Message functionality will be implemented with backend database.');
-                        
-                        // Clear form
-                        form.reset();
-                    } else {
-                        alert('Please fill in all fields.');
-                    }
+                    await sendMessage();
                 });
             }
+            
+            // Save draft functionality
+            if (saveDraftBtn) {
+                saveDraftBtn.addEventListener('click', function() {
+                    saveDraft();
+                });
+            }
+            
+            // Auto-save draft periodically
+            setInterval(autoSaveDraft, 30000); // Every 30 seconds
+            
+            // Message action handlers
+            setupMessageActions();
+        }
+        
+        // Send message
+        async function sendMessage() {
+            const title = document.getElementById('MessageTitle').value.trim();
+            const content = document.getElementById('MessageContent').value.trim();
+            const priority = document.getElementById('Priority').value;
+            const category = document.getElementById('Category').value;
+            
+            if (!title || !content || !priority) {
+                showNotification('⚠️ Please fill in all required fields.', 'warning');
+                return;
+            }
+            
+            const messageData = {
+                title: title,
+                content: content,
+                priority: priority,
+                category: category,
+                timestamp: new Date().toISOString(),
+                authorId: currentUser.uid,
+                authorEmail: currentUser.email,
+                authorName: currentUser.displayName || currentUser.email,
+                status: 'sent',
+                read: false
+            };
+            
+            try {
+                const docRef = await db.collection('messages').add(messageData);
+                console.log('✅ Message sent with ID:', docRef.id);
+                
+                showNotification('✅ Message sent successfully!', 'success');
+                
+                // Clear form
+                document.getElementById('messageForm').reset();
+                
+                // Remove any saved draft
+                clearDraft();
+                
+                // Reload messages
+                await loadMessagesFromFirebase();
+                
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showNotification('❌ Error sending message', 'error');
+            }
+        }
+        
+        // Save draft
+        function saveDraft() {
+            const title = document.getElementById('MessageTitle').value.trim();
+            const content = document.getElementById('MessageContent').value.trim();
+            const priority = document.getElementById('Priority').value;
+            const category = document.getElementById('Category').value;
+            
+            if (!title && !content) {
+                showNotification('⚠️ Nothing to save as draft.', 'warning');
+                return;
+            }
+            
+            const draft = {
+                title: title,
+                content: content,
+                priority: priority,
+                category: category,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('messageDraft', JSON.stringify(draft));
+            showNotification('💾 Draft saved successfully!', 'info');
+            updateDraftCount();
+        }
+        
+        // Auto-save draft
+        function autoSaveDraft() {
+            const title = document.getElementById('MessageTitle')?.value.trim();
+            const content = document.getElementById('MessageContent')?.value.trim();
+            
+            if (title || content) {
+                saveDraft();
+            }
+        }
+        
+        // Load drafts from storage
+        function loadDraftsFromStorage() {
+            const savedDraft = localStorage.getItem('messageDraft');
+            if (savedDraft) {
+                try {
+                    const draft = JSON.parse(savedDraft);
+                    
+                    // Populate form with draft if user wants
+                    if (confirm('You have a saved draft. Would you like to load it?')) {
+                        document.getElementById('MessageTitle').value = draft.title || '';
+                        document.getElementById('MessageContent').value = draft.content || '';
+                        document.getElementById('Priority').value = draft.priority || '';
+                        document.getElementById('Category').value = draft.category || 'general';
+                    }
+                    
+                    drafts = [draft];
+                } catch (error) {
+                    console.error('Error loading draft:', error);
+                }
+            }
+            updateDraftCount();
+        }
+        
+        // Clear draft
+        function clearDraft() {
+            localStorage.removeItem('messageDraft');
+            drafts = [];
+            updateDraftCount();
+        }
+        
+        // Update draft count
+        function updateDraftCount() {
+            document.getElementById('draft-messages').textContent = drafts.length;
+        }
+        
+        // Render messages
+        function renderMessages() {
+            const messagesList = document.getElementById('messagesList');
+            
+            if (messages.length === 0) {
+                showEmptyState();
+                return;
+            }
+            
+            messagesList.innerHTML = '';
+            messagesList.style.display = 'block';
+            
+            messages.forEach(message => {
+                const messageDiv = createMessageElement(message);
+                messagesList.appendChild(messageDiv);
+            });
+            
+            animateMessages();
+        }
+        
+        // Create message element
+        function createMessageElement(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-item priority-${message.priority.toLowerCase()} ${message.type}`;
+            messageDiv.setAttribute('data-message-id', message.id);
+            
+            const timeAgo = getTimeAgo(new Date(message.timestamp));
+            const categoryEmoji = getCategoryEmoji(message.category);
+            const typeIcon = message.type === 'sent' ? '📤' : '📥';
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <h6 class="message-title">${typeIcon} ${categoryEmoji} ${escapeHtml(message.title)}</h6>
+                    <span class="message-priority priority-${message.priority.toLowerCase()}">${message.priority}</span>
+                </div>
+                <div class="message-content">${escapeHtml(message.content)}</div>
+                <div class="message-meta">
+                    <div class="message-author">
+                        <i class="fas fa-user"></i>
+                        <span>${message.type === 'sent' ? 'You' : message.authorName}</span>
+                    </div>
+                    <div class="message-time">
+                        <i class="fas fa-clock"></i>
+                        <span>${timeAgo}</span>
+                    </div>
+                    <div class="message-actions">
+                        <button class="message-action" onclick="viewMessage('${message.id}')" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="message-action" onclick="replyToMessage('${message.id}')" title="Reply">
+                            <i class="fas fa-reply"></i>
+                        </button>
+                        <button class="message-action" onclick="toggleStar('${message.id}')" title="Star">
+                            <i class="far fa-star"></i>
+                        </button>
+                        <button class="message-action" onclick="deleteMessage('${message.id}')" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return messageDiv;
+        }
+        
+        // Message actions
+        async function viewMessage(messageId) {
+            const message = messages.find(m => m.id === messageId);
+            if (!message) return;
+            
+            const modal = document.getElementById('messageDetailsModal');
+            const body = document.getElementById('messageDetailsBody');
+            
+            const timeAgo = getTimeAgo(new Date(message.timestamp));
+            const categoryEmoji = getCategoryEmoji(message.category);
+            
+            body.innerHTML = `
+                <div class="message-details">
+                    <div class="message-detail-header">
+                        <h4>${categoryEmoji} ${escapeHtml(message.title)}</h4>
+                        <span class="badge bg-${getPriorityColor(message.priority)}">${message.priority} Priority</span>
+                    </div>
+                    <div class="message-detail-meta">
+                        <div><strong>From:</strong> ${message.authorName} (${message.authorEmail})</div>
+                        <div><strong>Category:</strong> ${message.category}</div>
+                        <div><strong>Sent:</strong> ${timeAgo}</div>
+                    </div>
+                    <div class="message-detail-content">
+                        <h6>Message:</h6>
+                        <p>${escapeHtml(message.content)}</p>
+                    </div>
+                </div>
+            `;
+            
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+        }
+        
+        async function replyToMessage(messageId) {
+            const message = messages.find(m => m.id === messageId);
+            if (!message) return;
+            
+            // Pre-fill form with reply
+            document.getElementById('MessageTitle').value = `Re: ${message.title}`;
+            document.getElementById('MessageContent').value = `\n\n--- Original Message ---\n${message.content}`;
+            document.getElementById('Priority').value = message.priority;
+            document.getElementById('Category').value = message.category;
+            
+            // Focus on message content
+            document.getElementById('MessageContent').focus();
+            document.getElementById('MessageContent').setSelectionRange(0, 0);
+            
+            showNotification('📝 Reply template loaded', 'info');
+        }
+        
+        function toggleStar(messageId) {
+            // In a real app, this would update the database
+            showNotification('⭐ Star feature coming soon!', 'info');
+        }
+        
+        async function deleteMessage(messageId) {
+            const message = messages.find(m => m.id === messageId);
+            if (!message) return;
+            
+            if (!confirm(`Are you sure you want to delete "${message.title}"?`)) {
+                return;
+            }
+            
+            try {
+                await db.collection('messages').doc(messageId).delete();
+                showNotification('🗑️ Message deleted successfully!', 'success');
+                await loadMessagesFromFirebase();
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                showNotification('❌ Error deleting message', 'error');
+            }
+        }
+        
+        // Setup message actions
+        function setupMessageActions() {
+            // Actions are handled by onclick attributes in the HTML
+            console.log('✅ Message actions setup complete');
+        }
+        
+        // Utility functions
+        function getCategoryEmoji(category) {
+            const emojis = {
+                'announcement': '📢',
+                'meeting': '🤝',
+                'project': '📊',
+                'general': '💬'
+            };
+            return emojis[category] || '💬';
+        }
+        
+        function getPriorityColor(priority) {
+            const colors = {
+                'High': 'danger',
+                'Medium': 'warning',
+                'Low': 'success'
+            };
+            return colors[priority] || 'secondary';
+        }
+        
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+            
+            if (diffInMinutes < 1) return 'Just now';
+            if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+            
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+            
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+            
+            return date.toLocaleDateString();
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Update message statistics
+        function updateMessageStats() {
+            const sentMessages = messages.filter(m => m.type === 'sent');
+            const unreadMessages = messages.filter(m => !m.read && m.type === 'received');
+            
+            document.getElementById('total-messages').textContent = messages.length;
+            document.getElementById('unread-messages').textContent = unreadMessages.length;
+            document.getElementById('sent-messages').textContent = sentMessages.length;
+        }
+        
+        // UI state functions
+        function showLoadingState(show) {
+            const loading = document.getElementById('loadingMessages');
+            const messagesList = document.getElementById('messagesList');
+            const emptyState = document.getElementById('emptyMessages');
+            
+            if (show) {
+                loading.style.display = 'block';
+                messagesList.style.display = 'none';
+                emptyState.style.display = 'none';
+            } else {
+                loading.style.display = 'none';
+            }
+        }
+        
+        function showEmptyState() {
+            const loading = document.getElementById('loadingMessages');
+            const messagesList = document.getElementById('messagesList');
+            const emptyState = document.getElementById('emptyMessages');
+            
+            loading.style.display = 'none';
+            messagesList.style.display = 'none';
+            emptyState.style.display = 'block';
+        }
+        
+        // Focus message form
+        function focusMessageForm() {
+            document.getElementById('MessageTitle').focus();
+        }
+        
+        // Refresh messages
+        async function refreshMessages() {
+            const refreshBtn = document.getElementById('refreshMessagesBtn');
+            const icon = refreshBtn.querySelector('i');
+            
+            icon.classList.add('fa-spin');
+            refreshBtn.disabled = true;
+            
+            try {
+                await loadMessagesFromFirebase();
+                showNotification('✅ Messages refreshed!', 'success');
+            } catch (error) {
+                showNotification('❌ Error refreshing messages', 'error');
+            } finally {
+                icon.classList.remove('fa-spin');
+                refreshBtn.disabled = false;
+            }
+        }
+        
+        // Animate messages
+        function animateMessages() {
+            const messageItems = document.querySelectorAll('.message-item');
+            messageItems.forEach((item, index) => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    item.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                max-width: 300px;
+                font-weight: 500;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
         }
         
         // Initialize everything when Firebase is ready
