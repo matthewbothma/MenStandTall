@@ -1,0 +1,1796 @@
+﻿@page
+@model Wilproject.Pages.DashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+
+<!-- Antiforgery Token -->
+@Html.AntiForgeryToken()
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="dashboard-welcome">
+        <h1 class="dashboard-title" id="dashboard-greeting">Good Day!</h1>
+        <p class="dashboard-subtitle" id="dashboard-user-greeting">Welcome back to your dashboard</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-grid">
+    <div class="stat-card primary">
+        <div class="stat-icon primary">
+            <i class="fas fa-project-diagram"></i>
+        </div>
+        <div class="stat-number" id="active-projects-count">@Model.Stats.ActiveProjects</div>
+        <div class="stat-label">Active Projects</div>
+    </div>
+    
+    <div class="stat-card success">
+        <div class="stat-icon success">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-number" id="completed-tasks-count">@Model.Stats.CompletedTasks</div>
+        <div class="stat-label">Completed Tasks</div>
+    </div>
+    
+    <div class="stat-card warning">
+        <div class="stat-icon warning">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-number" id="team-members-count">@Model.Stats.TeamMembers</div>
+        <div class="stat-label">Team Members</div>
+    </div>
+    
+    <div class="stat-card info">
+        <div class="stat-icon info">
+            <i class="fas fa-calendar-check"></i>
+        </div>
+        <div class="stat-number" id="upcoming-events-count">@Model.Stats.UpcomingEvents</div>
+        <div class="stat-label">Upcoming Events</div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions-section mb-4">
+    <div class="row">
+        <div class="col-md-3">
+            <a href="/Projects" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <i class="fas fa-plus-circle"></i>
+                </div>
+                <div class="quick-action-content">
+                    <h6>New Project</h6>
+                    <p>Start a new project</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/Tasks" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="quick-action-content">
+                    <h6>Add Task</h6>
+                    <p>Create a new task</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/Calendar" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+                <div class="quick-action-content">
+                    <h6>Schedule Event</h6>
+                    <p>Add to calendar</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/Messages" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div class="quick-action-content">
+                    <h6>Send Message</h6>
+                    <p>Team communication</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="chart-grid">
+    <div class="chart-card">
+        <div class="chart-header">
+            <h3 class="chart-title">Project Progress Overview</h3>
+            <div class="chart-actions">
+                <button class="btn-chart active" data-period="7">7D</button>
+                <button class="btn-chart" data-period="30">30D</button>
+                <button class="btn-chart" data-period="90">90D</button>
+                <button class="btn-refresh" onclick="refreshDashboard()" title="Refresh Data">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="projectProgressChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-card">
+        <div class="chart-header">
+            <h3 class="chart-title">Task Distribution</h3>
+            <div class="chart-actions">
+                <select class="chart-view-selector" id="chartViewSelector">
+                    <option value="tasks">Task Distribution</option>
+                    <option value="projects">Project Status</option>
+                </select>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="taskDistributionChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Activity Feed -->
+<div class="activity-feed">
+    <div class="activity-card">
+        <h3 class="chart-title mb-3">Recent Activity</h3>
+        <div id="recent-activities">
+            @if (Model.RecentActivities.Any())
+            {
+                @foreach (var activity in Model.RecentActivities)
+                {
+                    <div class="activity-item">
+                        <div class="activity-icon" style="background: @activity.BackgroundColor; color: white;">
+                            <i class="@activity.Icon"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h6>@activity.Title</h6>
+                            <p>@activity.Description</p>
+                            <span class="activity-time">@activity.TimeAgo</span>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h5>No Recent Activity</h5>
+                    <p>Your recent activities will appear here as you use the system.</p>
+                    <button class="btn-modern btn-primary" onclick="goToProjects()">
+                        <i class="fas fa-plus"></i> Start Your First Project
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+    
+    <!-- Calendar Widget -->
+    <div class="activity-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="chart-title mb-0">Calendar</h3>
+            <button class="btn-modern btn-sm" onclick="goToCalendar()">
+                <i class="fas fa-external-link-alt"></i> Full View
+            </button>
+        </div>
+        <div id="dashboard-calendar">
+            <div class="calendar-mini">
+                <div class="calendar-header">
+                    <button class="calendar-nav" onclick="previousMonth()" title="Previous Month">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="calendar-title" id="calendarTitle">January 2024</span>
+                    <button class="calendar-nav" onclick="nextMonth()" title="Next Month">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="calendar-grid">
+                    <div class="calendar-weekdays">
+                        <div class="weekday">S</div>
+                        <div class="weekday">M</div>
+                        <div class="weekday">T</div>
+                        <div class="weekday">W</div>
+                        <div class="weekday">T</div>
+                        <div class="weekday">F</div>
+                        <div class="weekday">S</div>
+                    </div>
+                    <div class="calendar-days" id="calendarDays">
+                        <!-- Calendar days will be generated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            <div class="calendar-events" id="calendarEvents" onclick="goToCalendar()">
+                <h6>Upcoming Events</h6>
+                <div class="events-list" id="eventsList">
+                    <div class="empty-events" id="emptyEventsMessage">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Loading events...</span>
+                    </div>
+                </div>
+                <div class="calendar-footer-hint">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>Click to view full calendar</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        console.log('📊 Dashboard script starting...');
+        
+        var currentUser = null;
+        var dashboardData = @Html.Raw(Json.Serialize(new { stats = Model.Stats, chartData = Model.ChartData }));
+        var projectProgressChart = null;
+        var taskDistributionChart = null;
+        var currentPeriod = 7; // Default to 7 days
+        var chartViewMode = 'tasks'; // Default to task view
+        
+        // Calendar state
+        var currentCalendarDate = new Date();
+        var calendarEvents = [];
+        var recentActivities = [];
+        
+        // Data caches for charts
+        var projectsData = [];
+        var tasksData = [];
+        var eventsData = [];
+        var chartsInitialized = false;
+        var dataLoaded = false;
+        
+        // Wait for global Firebase to be ready
+        function waitForDashboardFirebase(callback) {
+            if (window.firebaseAuth) {
+                callback();
+            } else {
+                setTimeout(function() { waitForDashboardFirebase(callback); }, 100);
+            }
+        }
+        
+        // Setup dashboard-specific functionality
+        function setupDashboard() {
+            console.log('📊 Setting up dashboard');
+            
+            if (!window.firebaseAuth) {
+                console.error('❌ Firebase auth not available in dashboard');
+                return;
+            }
+            
+            // Authentication check for dashboard
+            window.firebaseAuth.onAuthStateChanged(function(user) {
+                if (!user) {
+                    console.log('❌ No user in dashboard, redirecting');
+                    window.location.href = '/';
+                } else {
+                    currentUser = user;
+                    updateDashboardGreeting(user);
+                    
+                    // Initialize charts first, then load data
+                    initializeCharts().then(() => {
+                        console.log('📊 Charts initialized, now loading data...');
+                        return loadFirebaseData();
+                    }).then(() => {
+                        console.log('📊 Data loaded, updating charts...');
+                        updateChartsWithRealData(projectsData, tasksData, []);
+                    });
+                    
+                    setupActivityTracking();
+                    setupChartControls();
+                    console.log('✅ Dashboard user set:', user.email);
+                }
+            });
+        }
+        
+        // Update dashboard greeting
+        function updateDashboardGreeting(user) {
+            const greetingEl = document.getElementById('dashboard-greeting');
+            const subGreetingEl = document.getElementById('dashboard-user-greeting');
+            
+            if (user) {
+                const displayName = user.displayName || user.email || 'User';
+                const emailSymbol = String.fromCharCode(64);
+                const atIndex = displayName.indexOf(emailSymbol);
+                const name = atIndex > -1 ? displayName.substring(0, atIndex) : displayName;
+                
+                const hour = new Date().getHours();
+                let greeting = 'Good Evening';
+                if (hour < 12) greeting = 'Good Morning';
+                else if (hour < 18) greeting = 'Good Afternoon';
+                
+                if (greetingEl) {
+                    greetingEl.textContent = `${greeting}, ${name}!`;
+                }
+                
+                if (subGreetingEl) {
+                    subGreetingEl.textContent = `Welcome back to your dashboard`;
+                }
+            }
+        }
+        
+        // Load Firebase data
+        async function loadFirebaseData() {
+            if (!window.firebaseDB || !currentUser) {
+                console.log('📊 Firebase DB or user not available yet');
+                return;
+            }
+            
+            try {
+                console.log('📊 Loading real Firebase data...');
+                
+                // Load projects - try user-specific first to avoid permission errors
+                let projectsSnapshot;
+                try {
+                    // Try to load all projects first (for company view)
+                    projectsSnapshot = await window.firebaseDB.collection('projects').get();
+                    console.log('📊 Loaded all company projects successfully');
+                } catch (permissionError) {
+                    console.log('📊 Company-wide access denied, loading user projects only:', permissionError.message);
+                    // Fallback to user-specific projects
+                    projectsSnapshot = await window.firebaseDB.collection('projects')
+                        .where('userId', '==', currentUser.uid)
+                        .get();
+                    console.log('📊 Loaded user projects only');
+                }
+                
+                // Load tasks - try user-specific to avoid permission issues
+                let tasksSnapshot;
+                try {
+                    tasksSnapshot = await window.firebaseDB.collection('tasks')
+                        .where('uid', '==', currentUser.uid)
+                        .get();
+                    console.log('📊 Tasks loaded successfully:', tasksSnapshot.docs.length);
+                } catch (taskError) {
+                    console.log('📊 Tasks access error:', taskError.message);
+                    // Create empty snapshot if tasks fail
+                    tasksSnapshot = { docs: [] };
+                }
+                
+                // Load events - user-specific - ENHANCED EVENT LOADING TO UNIVERSAL
+                let eventsSnapshot;
+                try {
+                    console.log('📊 Loading ALL company calendar events...');
+                    // Load ALL events for universal calendar widget
+                    eventsSnapshot = await window.firebaseDB.collection('events').get();
+                    console.log('📊 Company events loaded successfully:', eventsSnapshot.docs.length);
+                } catch (eventError) {
+                    console.log('📊 Company events access error, loading user events only:', eventError.message);
+                    // Fallback to user-specific events if permissions don't allow
+                    try {
+                        eventsSnapshot = await window.firebaseDB.collection('events')
+                            .where('userId', '==', currentUser.uid)
+                            .get();
+                        console.log('📊 User events loaded as fallback:', eventsSnapshot.docs.length);
+                    } catch (userEventError) {
+                        console.log('📊 User events also failed:', userEventError.message);
+                        eventsSnapshot = { docs: [] };
+                    }
+                }
+                
+                // Load team members count
+                let teamMembersCount = 1; // At least current user
+                try {
+                    console.log('📊 Counting team members...');
+                    
+                    // Try to get all users who have created projects (indicating active team members)
+                    const allProjectsSnapshot = await window.firebaseDB.collection('projects').get();
+                    const uniqueUserIds = new Set();
+                    
+                    allProjectsSnapshot.docs.forEach(doc => {
+                        const project = doc.data();
+                        if (project.userId) {
+                            uniqueUserIds.add(project.userId);
+                        }
+                    });
+                    
+                    // Also count users who have created tasks
+                    const allTasksSnapshot = await window.firebaseDB.collection('tasks').get();
+                    allTasksSnapshot.docs.forEach(doc => {
+                        const task = doc.data();
+                        if (task.uid) {
+                            uniqueUserIds.add(task.uid);
+                        }
+                    });
+                    
+                    // Also count users who have created events
+                    const allEventsSnapshot = await window.firebaseDB.collection('events').get();
+                    allEventsSnapshot.docs.forEach(doc => {
+                        const event = doc.data();
+                        if (event.userId) {
+                            uniqueUserIds.add(event.userId);
+                        }
+                    });
+                    
+                    teamMembersCount = uniqueUserIds.size;
+                    console.log(`📊 Found ${teamMembersCount} active team members:`, Array.from(uniqueUserIds));
+                    
+                } catch (teamError) {
+                    console.log('📊 Team members access limited, showing current user only:', teamError.message);
+                    teamMembersCount = 1; // Fallback to current user only
+                }
+                
+                console.log('📊 Firebase data loaded:', {
+                    projects: projectsSnapshot.docs?.length || 0,
+                    tasks: tasksSnapshot.docs?.length || 0,
+                    events: eventsSnapshot.docs?.length || 0,
+                    teamMembers: teamMembersCount
+                });
+                
+                // Process data and store globally
+                projectsData = projectsSnapshot.docs?.map(doc => ({id: doc.id, ...doc.data()})) || [];
+                tasksData = tasksSnapshot.docs?.map(doc => ({id: doc.id, ...doc.data()})) || [];
+                eventsData = eventsSnapshot.docs?.map(doc => ({id: doc.id, ...doc.data()})) || [];
+                
+                console.log('📊 Processed data:', {
+                    projectsData: projectsData.length,
+                    tasksData: tasksData.length,
+                    eventsData: eventsData.length
+                });
+                
+                // Log task data for debugging
+                if (tasksData.length > 0) {
+                    console.log('📊 Task status breakdown:', tasksData.map(t => ({ name: t.name, status: t.status })));
+                }
+                
+                // Log event data for debugging
+                if (eventsData.length > 0) {
+                    console.log('📊 Events breakdown:', eventsData.map(e => ({ 
+                        title: e.title, 
+                        start: e.start,
+                        startDate: new Date(e.start),
+                        isUpcoming: new Date(e.start) > new Date()
+                    })));
+                }
+                
+                // Calculate real stats
+                const activeProjects = projectsData.filter(p => {
+                    const status = p.status?.toLowerCase();
+                    return status !== 'completed' && status !== 'complete' && status !== 'done';
+                });
+                
+                const completedProjects = projectsData.filter(p => {
+                    const status = p.status?.toLowerCase();
+                    return status === 'completed' || status === 'complete' || status === 'done';
+                });
+                
+                const completedTasks = tasksData.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status === 'done' || status === 'completed' || status === 'complete';
+                });
+                
+                // Filter upcoming events - ENHANCED LOGIC
+                const now = new Date();
+                const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+                
+                const upcomingEvents = eventsData.filter(e => {
+                    if (!e.start) {
+                        console.log('📊 Event missing start date:', e);
+                        return false;
+                    }
+                    
+                    const eventStart = new Date(e.start);
+                    const eventEnd = e.end ? new Date(e.end) : new Date(eventStart.getTime() + (60 * 60 * 1000)); // Default 1 hour if no end time
+                    
+                    // Include events that:
+                    // 1. Are happening right now (start <= now <= end)
+                    // 2. Will happen in the next 30 days
+                    const isHappeningNow = eventStart <= now && now <= eventEnd;
+                    const isUpcoming = eventStart > now && eventStart <= thirtyDaysFromNow;
+                    
+                    const isIncluded = isHappeningNow || isUpcoming;
+                    
+                    if (isIncluded) {
+                        console.log('📊 Including event:', {
+                            title: e.title,
+                            start: e.start,
+                            eventStart: eventStart.toLocaleString(),
+                            isHappeningNow,
+                            isUpcoming
+                        });
+                    }
+                    
+                    return isIncluded;
+                });
+                
+                console.log('📊 Calculated stats:', {
+                    activeProjects: activeProjects.length,
+                    completedProjects: completedProjects.length,
+                    completedTasks: completedTasks.length,
+                    totalTasks: tasksData.length,
+                    upcomingEvents: upcomingEvents.length,
+                    teamMembers: teamMembersCount
+                });
+                
+                // Update UI with real data
+                updateStatsUI({
+                    activeProjects: activeProjects.length,
+                    completedTasks: completedTasks.length,
+                    teamMembers: teamMembersCount,
+                    upcomingEvents: upcomingEvents.length
+                });
+                
+                // UPDATE CALENDAR WIDGET WITH EVENTS
+                updateCalendarWidget(eventsData, upcomingEvents);
+                
+                // UPDATE RECENT ACTIVITY - NEW
+                updateRecentActivity(projectsData, tasksData, eventsData);
+                
+                dataLoaded = true;
+                
+                // IMMEDIATELY UPDATE DONUT CHART AFTER DATA LOADS
+                if (chartsInitialized && taskDistributionChart) {
+                    console.log('📊 IMMEDIATELY updating donut chart with loaded data...');
+                    
+                    // Force immediate donut chart update
+                    setTimeout(() => {
+                        forceDonutChartUpdate(tasksData, projectsData);
+                    }, 100);
+                    
+                    // Additional update after short delay
+                    setTimeout(() => {
+                        forceDonutChartUpdate(tasksData, projectsData);
+                    }, 500);
+                }
+                
+                console.log('✅ Real Firebase data loaded successfully');
+                
+            } catch (error) {
+                console.error('❌ Error loading Firebase data:', error);
+                
+                // If there's an error, show zeros instead of sample data
+                updateStatsUI({
+                    activeProjects: 0,
+                    completedTasks: 0,
+                    teamMembers: 1, // At least current user
+                    upcomingEvents: 0
+                });
+            }
+        }
+        
+        // NEW: Update calendar widget function
+        function updateCalendarWidget(allEvents, upcomingEvents) {
+            console.log('📅 Updating calendar widget...');
+            console.log('📅 All events:', allEvents.length);
+            console.log('📅 Upcoming events:', upcomingEvents.length);
+            
+            // Update calendar title with current month/year
+            const now = new Date();
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
+            const currentMonth = monthNames[now.getMonth()];
+            const currentYear = now.getFullYear();
+            
+            const calendarTitleEl = document.getElementById('calendarTitle');
+            if (calendarTitleEl) {
+                calendarTitleEl.textContent = `${currentMonth} ${currentYear}`;
+            }
+            
+            // Generate calendar days
+            generateCalendarDays(now, allEvents);
+            
+            // Update upcoming events list
+            updateUpcomingEventsList(upcomingEvents);
+            
+            console.log('📅 Calendar widget updated successfully');
+        }
+        
+        // Generate calendar days
+        function generateCalendarDays(currentDate, events) {
+            const calendarDaysEl = document.getElementById('calendarDays');
+            if (!calendarDaysEl) return;
+            
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            // Get first day of month and number of days
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            // Clear existing days
+            calendarDaysEl.innerHTML = '';
+            
+            // Add empty cells for days before month starts
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'calendar-day empty';
+                calendarDaysEl.appendChild(emptyDay);
+            }
+            
+            // Add days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                dayEl.textContent = day;
+                
+                // Check if this day has events
+                const dayDate = new Date(year, month, day);
+                const dayEvents = events.filter(event => {
+                    const eventDate = new Date(event.start);
+                    return eventDate.getFullYear() === year && 
+                           eventDate.getMonth() === month && 
+                           eventDate.getDate() === day;
+                });
+                
+                if (dayEvents.length > 0) {
+                    dayEl.classList.add('has-events');
+                    dayEl.title = `${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}`;
+                }
+                
+                // Highlight today
+                const today = new Date();
+                if (dayDate.toDateString() === today.toDateString()) {
+                    dayEl.classList.add('today');
+                }
+                
+                calendarDaysEl.appendChild(dayEl);
+            }
+        }
+        
+        // Update upcoming events list
+        function updateUpcomingEventsList(upcomingEvents) {
+            const eventsListEl = document.getElementById('eventsList');
+            if (!eventsListEl) return;
+            
+            console.log('📅 Updating events list with:', upcomingEvents.length, 'events');
+            
+            if (upcomingEvents.length === 0) {
+                eventsListEl.innerHTML = `
+                    <div class="empty-events">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>No upcoming events</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort events by start date
+            const sortedEvents = upcomingEvents.sort((a, b) => {
+                return new Date(a.start) - new Date(b.start);
+            });
+            
+            // Show up to 3 upcoming events
+            const eventsToShow = sortedEvents.slice(0, 3);
+            
+            let eventsHtml = '';
+            eventsToShow.forEach(event => {
+                const eventDate = new Date(event.start);
+                const now = new Date();
+                
+                // Check if this is the user's event or a team event
+                const isMyEvent = currentUser && event.userId === currentUser.uid;
+                var atSymbol = String.fromCharCode(64);
+                
+                // Get author name with better fallback logic
+                let authorName = 'Team Member';
+                if (event.authorName) {
+                    authorName = event.authorName;
+                } else if (event.authorEmail) {
+                    var emailParts = event.authorEmail.split(atSymbol);
+                    authorName = emailParts[0];
+                }
+                
+                // Calculate time until event
+                let timeText = '';
+                const timeDiff = eventDate - now;
+                const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                
+                if (timeDiff < 0) {
+                    // Event is happening now or recently started
+                    timeText = 'Happening now';
+                } else if (daysDiff === 0) {
+                    timeText = 'Today';
+                } else if (daysDiff === 1) {
+                    timeText = 'Tomorrow';
+                } else if (daysDiff <= 7) {
+                    timeText = `In ${daysDiff} days`;
+                } else {
+                    timeText = eventDate.toLocaleDateString();
+                }
+                
+                const eventTime = eventDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                // Add visual indicator for my events vs team events
+                const eventClass = isMyEvent ? 'my-event' : 'team-event';
+                const eventIcon = isMyEvent ? '✓' : '👥';
+                const eventAuthor = isMyEvent ? 'You' : authorName;
+                
+                eventsHtml += `
+                    <div class="event-item ${eventClass}">
+                        <div class="event-dot ${getPriorityClass(event.priority)}"></div>
+                        <div class="event-info">
+                            <div class="event-title">
+                                ${eventIcon} ${escapeHtml(event.title)}
+                            </div>
+                            <div class="event-time">
+                                ${timeText}${!event.allDay ? ` at ${eventTime}` : ''} • ${eventAuthor}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // If there are more events, show count
+            if (upcomingEvents.length > 3) {
+                eventsHtml += `
+                    <div class="more-events">
+                        <a href="/Calendar" class="text-decoration-none">
+                            <i class="fas fa-plus"></i> ${upcomingEvents.length - 3} more company events
+                        </a>
+                    </div>
+                `;
+            }
+            
+            eventsListEl.innerHTML = eventsHtml;
+            
+            console.log('📅 Events list updated with universal events and author indicators');
+        }
+        
+        // Helper functions for calendar
+        function getPriorityClass(priority) {
+            const priorityMap = {
+                'high': 'priority-high',
+                'medium': 'priority-medium',
+                'low': 'priority-low'
+            };
+            return priorityMap[priority] || 'priority-medium';
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+        
+        // NEW: Update recent activity function
+        function updateRecentActivity(projects, tasks, events) {
+            console.log('📝 Updating recent activity...');
+            
+            const recentActivitiesEl = document.getElementById('recent-activities');
+            if (!recentActivitiesEl) return;
+            
+            // Collect all activities with timestamps
+            const activities = [];
+            
+            // Project activities
+            projects.forEach(project => {
+                const status = project.status?.toLowerCase();
+                
+                // Project created
+                if (project.createdAt) {
+                    activities.push({
+                        type: 'project_created',
+                        title: `Project Created`,
+                        description: `Created "${project.name}"`,
+                        icon: 'fas fa-plus-circle',
+                        backgroundColor: '#10b981',
+                        timestamp: new Date(project.createdAt).getTime(),
+                        data: project
+                    });
+                }
+                
+                // Project updated
+                if (project.updatedAt && project.updatedAt !== project.createdAt) {
+                    activities.push({
+                        type: 'project_updated',
+                        title: `Project Updated`,
+                        description: `Updated "${project.name}"`,
+                        icon: 'fas fa-edit',
+                        backgroundColor: '#ff6b35',
+                        timestamp: new Date(project.updatedAt).getTime(),
+                        data: project
+                    });
+                }
+                
+                // Project completed
+                if (status === 'completed' || status === 'complete' || status === 'done') {
+                    const completedTime = project.updatedAt || project.createdAt;
+                    if (completedTime) {
+                        activities.push({
+                            type: 'project_completed',
+                            title: `Project Completed`,
+                            description: `Completed "${project.name}"`,
+                            icon: 'fas fa-check-circle',
+                            backgroundColor: '#000000',
+                            timestamp: new Date(completedTime).getTime(),
+                            data: project
+                        });
+                    }
+                }
+            });
+            
+            // Task activities
+            tasks.forEach(task => {
+                const status = task.status?.toLowerCase();
+                
+                // Task created
+                if (task.createdAt) {
+                    activities.push({
+                        type: 'task_created',
+                        title: `Task Created`,
+                        description: `Created task "${task.name}"`,
+                        icon: 'fas fa-tasks',
+                        backgroundColor: '#3b82f6',
+                        timestamp: new Date(task.createdAt).getTime(),
+                        data: task
+                    });
+                }
+                
+                // Task updated
+                if (task.updatedAt && task.updatedAt !== task.createdAt) {
+                    activities.push({
+                        type: 'task_updated',
+                        title: `Task Updated`,
+                        description: `Updated task "${task.name}"`,
+                        icon: 'fas fa-edit',
+                        backgroundColor: '#f59e0b',
+                        timestamp: new Date(task.updatedAt).getTime(),
+                        data: task
+                    });
+                }
+                
+                // Task completed
+                if (status === 'done' || status === 'completed' || status === 'complete') {
+                    const completedTime = task.updatedAt || task.createdAt;
+                    if (completedTime) {
+                        activities.push({
+                            type: 'task_completed',
+                            title: `Task Completed`,
+                            description: `Completed task "${task.name}"`,
+                            icon: 'fas fa-check-square',
+                            backgroundColor: '#10b981',
+                            timestamp: new Date(completedTime).getTime(),
+                            data: task
+                        });
+                    }
+                }
+            });
+            
+            // Event activities
+            events.forEach(event => {
+                if (event.createdAt) {
+                    activities.push({
+                        type: 'event_created',
+                        title: `Event Scheduled`,
+                        description: `Scheduled "${event.title}"`,
+                        icon: 'fas fa-calendar-plus',
+                        backgroundColor: '#8b5cf6',
+                        timestamp: new Date(event.createdAt).getTime(),
+                        data: event
+                    });
+                }
+            });
+            
+            // Sort activities by timestamp (most recent first)
+            activities.sort((a, b) => b.timestamp - a.timestamp);
+            
+            // Take only the most recent 10 activities
+            const recentActivities = activities.slice(0, 10);
+            
+            console.log('📝 Recent activities:', recentActivities.length);
+            
+            // Display activities
+            if (recentActivities.length === 0) {
+                recentActivitiesEl.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <h5>No Recent Activity</h5>
+                        <p>Your recent activities will appear here as you use the system.</p>
+                        <button class="btn-modern btn-primary" onclick="goToProjects()">
+                            <i class="fas fa-plus"></i> Start Your First Project
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let activitiesHtml = '';
+            recentActivities.forEach(activity => {
+                const timeAgo = getTimeAgo(activity.timestamp);
+                
+                activitiesHtml += `
+                    <div class="activity-item" data-type="${activity.type}">
+                        <div class="activity-icon" style="background: ${activity.backgroundColor}; color: white;">
+                            <i class="${activity.icon}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h6>${activity.title}</h6>
+                            <p>${activity.description}</p>
+                            <span class="activity-time">${timeAgo}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            recentActivitiesEl.innerHTML = activitiesHtml;
+            
+            console.log('📝 Recent activities updated successfully');
+        }
+        
+        // Get time ago string
+        function getTimeAgo(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            const weeks = Math.floor(days / 7);
+            const months = Math.floor(days / 30);
+            const years = Math.floor(days / 365);
+            
+            if (seconds < 60) return 'Just now';
+            if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+            if (weeks < 4) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+            if (months < 12) return `${months} month${months > 1 ? 's' : ''} ago`;
+            return `${years} year${years > 1 ? 's' : ''} ago`;
+        }
+        
+        // NEW: Force donut chart update function
+        function forceDonutChartUpdate(tasks, projects) {
+            if (!taskDistributionChart) {
+                console.log('📊 Cannot force donut update - chart not ready');
+                return;
+            }
+            
+            console.log('🍩 FORCING immediate donut chart update...');
+            
+            // Calculate task data
+            const todoCount = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'to do' || status === 'todo' || status === 'pending' || !status;
+            }).length;
+            
+            const doingCount = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'doing' || status === 'in progress' || status === 'inprogress';
+            }).length;
+            
+            const doneCount = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'done' || status === 'completed' || status === 'complete';
+            }).length;
+            
+            const reviewCount = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'review' || status === 'testing' || status === 'pending review';
+            }).length;
+            
+            console.log('🍩 Calculated task counts:', { todoCount, doingCount, doneCount, reviewCount });
+            
+            // Update chart immediately
+            taskDistributionChart.data.labels = ['Completed', 'In Progress', 'To Do', 'Review'];
+            taskDistributionChart.data.datasets[0].data = [doneCount, doingCount, todoCount, reviewCount];
+            taskDistributionChart.data.datasets[0].backgroundColor = [
+                '#10b981', // Green for completed
+                '#ff6b35', // Orange for in progress
+                '#94a3b8', // Gray for to do
+                '#3b82f6'  // Blue for review
+            ];
+            
+            // Force update without animation for immediate display
+            taskDistributionChart.update('none');
+            console.log('🍩 Donut chart FORCED update completed!');
+        }
+        
+        // Update stats UI
+        function updateStatsUI(stats) {
+            const elements = {
+                'active-projects-count': stats.activeProjects,
+                'completed-tasks-count': stats.completedTasks,
+                'team-members-count': stats.teamMembers,
+                'upcoming-events-count': stats.upcomingEvents
+            };
+            
+            Object.entries(elements).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    // Animate number change
+                    animateNumber(element, parseInt(element.textContent) || 0, value);
+                }
+            });
+        }
+        
+        // Animate number changes
+        function animateNumber(element, start, end) {
+            if (start === end) return;
+            
+            const duration = 1000;
+            const startTime = performance.now();
+            
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                const current = Math.floor(start + (end - start) * progress);
+                element.textContent = current;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
+        
+        // Update charts with real data
+        function updateChartsWithRealData(projects, tasks, completedProjects) {
+            console.log('📊 Updating charts with real data...');
+            console.log('📊 Chart initialization status:', {
+                projectProgressChart: !!projectProgressChart,
+                taskDistributionChart: !!taskDistributionChart,
+                chartsInitialized: chartsInitialized
+            });
+            
+            if (!chartsInitialized) {
+                console.log('📊 Charts not initialized yet, waiting...');
+                setTimeout(() => updateChartsWithRealData(projects, tasks, completedProjects), 500);
+                return;
+            }
+            
+            // Update project progress chart with time-based data
+            updateProjectProgressChart(projects, currentPeriod);
+            
+            // Update task/project distribution chart - FORCE UPDATE
+            console.log('📊 About to update distribution chart with:', {
+                tasksCount: tasks.length,
+                projectsCount: projects.length,
+                chartViewMode: chartViewMode
+            });
+            
+            updateDistributionChart(tasks, projects);
+            
+            // Force additional updates to ensure chart displays
+            setTimeout(() => {
+                console.log('📊 Forcing additional chart update...');
+                forceChartUpdate(tasks, projects);
+            }, 300);
+            
+            console.log('✅ Charts updated with real data');
+        }
+        
+        // NEW: Force chart update function
+        function forceChartUpdate(tasks, projects) {
+            if (!taskDistributionChart || !chartsInitialized) {
+                console.log('📊 Cannot force update - chart not ready');
+                return;
+            }
+            
+            console.log('🔧 Forcing chart update with current data...');
+            
+            // Set the dropdown to match current mode
+            const viewSelector = document.getElementById('chartViewSelector');
+            if (viewSelector && viewSelector.value !== chartViewMode) {
+                viewSelector.value = chartViewMode;
+                console.log('🔧 Updated dropdown to match chartViewMode:', chartViewMode);
+            }
+            
+            // Calculate data based on current mode
+            let newData = [0, 0, 0, 0];
+            let newLabels = ['No Data'];
+            let newColors = ['#e5e7eb'];
+            
+            if (chartViewMode === 'tasks' && tasks.length > 0) {
+                const todoCount = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status === 'to do' || status === 'todo' || status === 'pending' || !status;
+                }).length;
+                
+                const doingCount = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status === 'doing' || status === 'in progress' || status === 'inprogress';
+                }).length;
+                
+                const doneCount = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status === 'done' || status === 'completed' || status === 'complete';
+                }).length;
+                
+                const reviewCount = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status === 'review' || status === 'testing' || status === 'pending review';
+                }).length;
+                
+                newData = [doneCount, doingCount, todoCount, reviewCount];
+                newLabels = ['Completed', 'In Progress', 'To Do', 'Review'];
+                newColors = ['#10b981', '#ff6b35', '#94a3b8', '#3b82f6'];
+                
+                console.log('🔧 Task data for force update:', { todoCount, doingCount, doneCount, reviewCount });
+                
+            } else if (chartViewMode === 'projects' && projects.length > 0) {
+                const planningCount = projects.filter(p => {
+                    const status = p.status?.toLowerCase();
+                    return status === 'planning' || !status;
+                }).length;
+                
+                const activeCount = projects.filter(p => {
+                    const status = p.status?.toLowerCase();
+                    return status === 'active' || status === 'in progress';
+                }).length;
+                
+                const completedCount = projects.filter(p => {
+                    const status = p.status?.toLowerCase();
+                    return status === 'completed' || status === 'complete' || status === 'done';
+                }).length;
+                
+                const onholdCount = projects.filter(p => {
+                    const status = p.status?.toLowerCase();
+                    return status === 'onhold' || status === 'on hold' || status === 'paused';
+                }).length;
+                
+                newData = [completedCount, activeCount, planningCount, onholdCount];
+                newLabels = ['Completed', 'Active', 'Planning', 'On Hold'];
+                newColors = ['#10b981', '#ff6b35', '#94a3b8', '#ef4444'];
+                
+                console.log('🔧 Project data for force update:', { planningCount, activeCount, completedCount, onholdCount });
+            }
+            
+            // Apply new data
+            taskDistributionChart.data.labels = newLabels;
+            taskDistributionChart.data.datasets[0].data = newData;
+            taskDistributionChart.data.datasets[0].backgroundColor = newColors;
+            
+            // Force update without animation
+            taskDistributionChart.update('none');
+            
+            console.log('🔧 Force update completed with data:', newData);
+        }
+        
+        // Update project progress chart
+        function updateProjectProgressChart(projects, period) {
+            if (!projectProgressChart) {
+                console.log('📊 Project progress chart not initialized');
+                return;
+            }
+            
+            console.log('📈 Updating project progress chart for period:', period);
+            
+            // Generate labels for the time period
+            const labels = [];
+            const progressData = [];
+            const now = new Date();
+            const startDate = new Date(now.getTime() - (period - 1) * 24 * 60 * 60 * 1000);
+            
+            // Initialize data arrays
+            for (let i = 0; i < period; i++) {
+                const currentDate = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+                
+                let labelText = '';
+                if (period <= 7) {
+                    labelText = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+                } else if (period <= 30) {
+                    labelText = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                } else {
+                    // For 90 days, show every 7th day
+                    if (i % 7 === 0 || i === period - 1) {
+                        labelText = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    } else {
+                        labelText = ''; // Empty label for intermediate days
+                    }
+                }
+                
+                // Only add non-empty labels
+                if (labelText) {
+                    labels.push(labelText);
+                }
+                
+                // Calculate projects completed on this date
+                const completedOnDate = projects.filter(project => {
+                    if (!project.updatedAt) return false;
+                    
+                    const updateDate = new Date(project.updatedAt);
+                    const projectStatus = project.status?.toLowerCase();
+                    const wasCompletedOnDate = updateDate.toDateString() === currentDate.toDateString() && 
+                                            (projectStatus === 'completed' || projectStatus === 'complete' || projectStatus === 'done');
+                    
+                    return wasCompletedOnDate;
+                }).length;
+                
+                // Only add data for labels we're showing
+                if (labelText) {
+                    progressData.push(completedOnDate);
+                }
+            }
+            
+            // Ensure we have valid string labels and numeric data
+            const validLabels = labels.filter(label => typeof label === 'string' && label.length > 0);
+            const validData = progressData.filter(data => typeof data === 'number');
+            
+            // Make sure arrays are same length
+            const finalLabels = validLabels.slice(0, Math.min(validLabels.length, validData.length));
+            const finalData = validData.slice(0, Math.min(validLabels.length, validData.length));
+            
+            console.log('📈 Chart data prepared:', {
+                finalLabels,
+                finalData,
+                originalLabelsLength: labels.length,
+                originalDataLength: progressData.length
+            });
+            
+            // Safely update chart data
+            try {
+                projectProgressChart.data.labels = finalLabels;
+                projectProgressChart.data.datasets[0].data = finalData;
+                
+                // Update chart title based on period
+                const chartTitle = period <= 7 ? 'Projects Completed (Last 7 Days)' : 
+                                  period <= 30 ? 'Projects Completed (Last 30 Days)' : 
+                                  'Projects Completed (Last 90 Days)';
+                
+                // Safely update chart options
+                if (!projectProgressChart.options.plugins) {
+                    projectProgressChart.options.plugins = {};
+                }
+                
+                projectProgressChart.options.plugins.title = {
+                    display: true,
+                    text: chartTitle
+                };
+                
+                // Update with error handling
+                projectProgressChart.update('active');
+                console.log('📈 Project progress chart updated successfully');
+                
+            } catch (error) {
+                console.error('📈 Error updating project progress chart:', error);
+                // Fallback: create simple data structure
+                projectProgressChart.data.labels = ['No Data'];
+                projectProgressChart.data.datasets[0].data = [0];
+                projectProgressChart.update('none');
+            }
+        }
+        
+        // Update distribution chart (tasks or projects)
+        function updateDistributionChart(tasks, projects) {
+            if (!taskDistributionChart) {
+                console.log('📊 Task distribution chart not initialized');
+                return;
+            }
+            
+            console.log('🍩 Updating distribution chart, mode:', chartViewMode);
+            console.log('🍩 Tasks data:', tasks.length, 'Projects data:', projects.length);
+            
+            if (chartViewMode === 'tasks') {
+                // Task distribution - ENHANCED DEBUGGING
+                const allTasks = tasks.map(t => ({
+                    name: t.name,
+                    status: t.status,
+                    statusLower: t.status?.toLowerCase()
+                }));
+                
+                console.log('🍩 All tasks with status:', allTasks);
+                
+                const todoCount = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status === 'to do' || status === 'todo' || status === 'pending' || !status;
+                }).length;
+                
+                const doingCount = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status === 'doing' || status === 'in progress' || status === 'inprogress';
+                }).length;
+                
+                const doneCount = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status === 'done' || status === 'completed' || status === 'complete';
+                }).length;
+                
+                const reviewCount = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status === 'review' || status === 'testing' || status === 'pending review';
+                }).length;
+                
+                console.log('🍩 Task distribution calculated:', {
+                    todoCount,
+                    doingCount,
+                    doneCount,
+                    reviewCount,
+                    total: todoCount + doingCount + doneCount + reviewCount
+                });
+                
+                // Update chart data
+                taskDistributionChart.data.labels = ['Completed', 'In Progress', 'To Do', 'Review'];
+                taskDistributionChart.data.datasets[0].data = [doneCount, doingCount, todoCount, reviewCount];
+                taskDistributionChart.data.datasets[0].backgroundColor = [
+                    '#10b981', // Green for completed
+                    '#ff6b35', // Orange for in progress  
+                    '#94a3b8', // Gray for to do
+                    '#3b82f6'  // Blue for review
+                ];
+                
+                // Update chart title
+                const chartTitleEl = document.querySelector('#taskDistributionChart').closest('.chart-card').querySelector('.chart-title');
+                if (chartTitleEl) {
+                    chartTitleEl.textContent = 'Task Distribution';
+                }
+                
+            } else {
+                // Project distribution - ENHANCED DEBUGGING
+                const allProjects = projects.map(p => ({
+                    name: p.name,
+                    status: p.status,
+                    statusLower: p.status?.toLowerCase()
+                }));
+                
+                console.log('🍩 All projects with status:', allProjects);
+                
+                const planningCount = projects.filter(p => {
+                    const status = p.status?.toLowerCase();
+                    return status === 'planning' || !status;
+                }).length;
+                
+                const activeCount = projects.filter(p => {
+                    const status = p.status?.toLowerCase();
+                    return status === 'active' || status === 'in progress';
+                }).length;
+                
+                const completedCount = projects.filter(p => {
+                    const status = p.status?.toLowerCase();
+                    return status === 'completed' || status === 'complete' || status === 'done';
+                }).length;
+                
+                const onholdCount = projects.filter(p => {
+                    const status = p.status?.toLowerCase();
+                    return status === 'onhold' || status === 'on hold' || status === 'paused';
+                }).length;
+                
+                console.log('🍩 Project distribution calculated:', {
+                    planningCount,
+                    activeCount,
+                    completedCount,
+                    onholdCount,
+                    total: planningCount + activeCount + completedCount + onholdCount
+                });
+                
+                // Update chart data
+                taskDistributionChart.data.labels = ['Completed', 'Active', 'Planning', 'On Hold'];
+                taskDistributionChart.data.datasets[0].data = [completedCount, activeCount, planningCount, onholdCount];
+                taskDistributionChart.data.datasets[0].backgroundColor = [
+                    '#10b981', // Green for completed
+                    '#ff6b35', // Orange for active
+                    '#94a3b8', // Gray for planning
+                    '#ef4444'  // Red for on hold
+                ];
+                
+                // Update chart title
+                const chartTitleEl = document.querySelector('#taskDistributionChart').closest('.chart-card').querySelector('.chart-title');
+                if (chartTitleEl) {
+                    chartTitleEl.textContent = 'Project Status';
+                }
+            }
+            
+            // FORCE CHART UPDATE - Multiple attempts to ensure rendering
+            console.log('🍩 Forcing chart update with data:', taskDistributionChart.data.datasets[0].data);
+            
+            // Destroy and recreate the chart if data is empty
+            const hasData = taskDistributionChart.data.datasets[0].data.some(value => value > 0);
+            
+            if (!hasData) {
+                console.log('🍩 No data found, showing empty state...');
+                // Show placeholder data to make chart visible
+                taskDistributionChart.data.datasets[0].data = [1, 0, 0, 0];
+                taskDistributionChart.data.labels = ['No Data Available'];
+                taskDistributionChart.data.datasets[0].backgroundColor = ['#e5e7eb'];
+            }
+            
+            // Force multiple updates
+            taskDistributionChart.update('active');
+            
+            setTimeout(() => {
+                taskDistributionChart.update('none');
+                console.log('🍩 Chart updated again after delay');
+            }, 200);
+            
+            setTimeout(() => {
+                if (hasData) {
+                    // Restore original data if we had to show placeholder
+                    if (chartViewMode === 'tasks') {
+                        const todoCount = tasks.filter(t => {
+                            const status = t.status?.toLowerCase();
+                            return status === 'to do' || status === 'todo' || status === 'pending' || !status;
+                        }).length;
+                        
+                        const doingCount = tasks.filter(t => {
+                            const status = t.status?.toLowerCase();
+                            return status === 'doing' || status === 'in progress' || status === 'inprogress';
+                        }).length;
+                        
+                        const doneCount = tasks.filter(t => {
+                            const status = t.status?.toLowerCase();
+                            return status === 'done' || status === 'completed' || status === 'complete';
+                        }).length;
+                        
+                        const reviewCount = tasks.filter(t => {
+                            const status = t.status?.toLowerCase();
+                            return status === 'review' || status === 'testing' || status === 'pending review';
+                        }).length;
+                        
+                        taskDistributionChart.data.labels = ['Completed', 'In Progress', 'To Do', 'Review'];
+                        taskDistributionChart.data.datasets[0].data = [doneCount, doingCount, todoCount, reviewCount];
+                        taskDistributionChart.data.datasets[0].backgroundColor = [
+                            '#10b981', '#ff6b35', '#94a3b8', '#3b82f6'
+                        ];
+                    } else {
+                        const planningCount = projects.filter(p => {
+                            const status = p.status?.toLowerCase();
+                            return status === 'planning' || !status;
+                        }).length;
+                        
+                        const activeCount = projects.filter(p => {
+                            const status = p.status?.toLowerCase();
+                            return status === 'active' || status === 'in progress';
+                        }).length;
+                        
+                        const completedCount = projects.filter(p => {
+                            const status = p.status?.toLowerCase();
+                            return status === 'completed' || status === 'complete' || status === 'done';
+                        }).length;
+                        
+                        const onholdCount = projects.filter(p => {
+                            const status = p.status?.toLowerCase();
+                            return status === 'onhold' || status === 'on hold' || status === 'paused';
+                        }).length;
+                        
+                        taskDistributionChart.data.labels = ['Completed', 'Active', 'Planning', 'On Hold'];
+                        taskDistributionChart.data.datasets[0].data = [completedCount, activeCount, planningCount, onholdCount];
+                        taskDistributionChart.data.datasets[0].backgroundColor = [
+                            '#10b981', '#ff6b35', '#94a3b8', '#ef4444'
+                        ];
+                    }
+                    taskDistributionChart.update('none');
+                }
+            }, 500);
+            
+            console.log('🍩 Distribution chart updated for:', chartViewMode, 'with final data:', taskDistributionChart.data.datasets[0].data);
+        }
+        
+        // Setup activity tracking
+        function setupActivityTracking() {
+            // Listen for task events for real-time updates
+            if (typeof window !== 'undefined') {
+                window.addEventListener('taskUpdated', function(event) {
+                    console.log('📊 Task updated, refreshing dashboard...', event.detail);
+                    setTimeout(() => {
+                        loadFirebaseData().then(() => {
+                            if (chartsInitialized && dataLoaded) {
+                                updateChartsWithRealData(projectsData, tasksData, []);
+                            }
+                        });
+                    }, 1000);
+                });
+                
+                window.addEventListener('calendarEventSaved', function(event) {
+                    console.log('📊 Calendar event saved, refreshing dashboard...');
+                    setTimeout(() => {
+                        loadFirebaseData().then(() => {
+                            if (chartsInitialized && dataLoaded) {
+                                updateChartsWithRealData(projectsData, tasksData, []);
+                            }
+                        });
+                    }, 1000);
+                });
+                
+                window.addEventListener('calendarEventUpdated', function(event) {
+                    console.log('📊 Calendar event updated, refreshing dashboard...');
+                    setTimeout(() => {
+                        loadFirebaseData().then(() => {
+                            if (chartsInitialized && dataLoaded) {
+                                updateChartsWithRealData(projectsData, tasksData, []);
+                            }
+                        });
+                    }, 1000);
+                });
+                
+                window.addEventListener('calendarEventDeleted', function(event) {
+                    console.log('📊 Calendar event deleted, refreshing dashboard...');
+                    setTimeout(() => {
+                        loadFirebaseData().then(() => {
+                            if (chartsInitialized && dataLoaded) {
+                                updateChartsWithRealData(projectsData, tasksData, []);
+                            }
+                        });
+                    }, 1000);
+                });
+                
+                window.addEventListener('projectUpdated', function(event) {
+                    console.log('📊 Project updated, refreshing dashboard...', event.detail);
+                    setTimeout(() => {
+                        loadFirebaseData().then(() => {
+                            if (chartsInitialized && dataLoaded) {
+                                updateChartsWithRealData(projectsData, tasksData, []);
+                            }
+                        });
+                    }, 1000);
+                });
+                
+                // NEW: Listen for project created event
+                window.addEventListener('projectCreated', function(event) {
+                    console.log('📊 Project created, refreshing dashboard...', event.detail);
+                    setTimeout(() => {
+                        loadFirebaseData();
+                    }, 1000);
+                });
+                
+                // NEW: Listen for project deleted event
+                window.addEventListener('projectDeleted', function(event) {
+                    console.log('📊 Project deleted, refreshing dashboard...', event.detail);
+                    setTimeout(() => {
+                        loadFirebaseData();
+                    }, 1000);
+                });
+                
+                // NEW: Listen for task created event
+                window.addEventListener('taskCreated', function(event) {
+                    console.log('📊 Task created, refreshing dashboard...', event.detail);
+                    setTimeout(() => {
+                        loadFirebaseData();
+                    }, 1000);
+                });
+                
+                // NEW: Listen for task deleted event
+                window.addEventListener('taskDeleted', function(event) {
+                    console.log('📊 Task deleted, refreshing dashboard...', event.detail);
+                    setTimeout(() => {
+                        loadFirebaseData();
+                    }, 1000);
+                });
+            }
+            
+            console.log('✅ Activity tracking setup complete');
+        }
+        
+        // Setup chart controls
+        function setupChartControls() {
+            // Period buttons for project progress chart
+            const periodButtons = document.querySelectorAll('.btn-chart');
+            periodButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    periodButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    currentPeriod = parseInt(this.getAttribute('data-period'));
+                    console.log('📊 Period changed to:', currentPeriod);
+                    
+                    // Update project progress chart
+                    if (projectsData.length >= 0 && chartsInitialized) {
+                        updateProjectProgressChart(projectsData, currentPeriod);
+                    }
+                });
+            });
+            
+            // Chart view selector for distribution chart
+            const viewSelector = document.getElementById('chartViewSelector');
+            if (viewSelector) {
+                viewSelector.addEventListener('change', function() {
+                    const oldMode = chartViewMode;
+                    chartViewMode = this.value;
+                    console.log('📊 Chart view mode changed from', oldMode, 'to:', chartViewMode);
+                    
+                    // Update distribution chart immediately
+                    if (chartsInitialized && (tasksData.length > 0 || projectsData.length > 0)) {
+                        console.log('📊 Updating chart due to view selector change...');
+                        updateDistributionChart(tasksData, projectsData);
+                    }
+                });
+            }
+        }
+        
+        // Initialize charts - return promise for proper sequencing
+        function initializeCharts() {
+            return new Promise((resolve) => {
+                console.log('📊 Initializing charts...');
+                
+                try {
+                    // Project Progress Chart - with safer initialization
+                    const progressCtx = document.getElementById('projectProgressChart');
+                    if (progressCtx) {
+                        projectProgressChart = new Chart(progressCtx.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                                datasets: [{
+                                    label: 'Projects Completed',
+                                    data: [0, 0, 0, 0, 0, 0, 0], // Start with zeros - Firebase will populate
+                                    borderColor: '#ff6b35',
+                                    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                                    borderWidth: 3,
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointBackgroundColor: '#ff6b35',
+                                    pointBorderColor: '#ffffff',
+                                    pointBorderWidth: 2,
+                                    pointRadius: 6,
+                                    pointHoverRadius: 8
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    title: {
+                                        display: false
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            stepSize: 1
+                                        }
+                                    },
+                                    x: {
+                                        grid: {
+                                            display: false
+                                        }
+                                    }
+                                },
+                                interaction: {
+                                    intersect: false,
+                                    mode: 'index'
+                                }
+                            }
+                        });
+                        console.log('📊 Project progress chart initialized');
+                    }
+                } catch (error) {
+                    console.error('📊 Error initializing project progress chart:', error);
+                }
+                
+                try {
+                    // Task Distribution Chart - ENHANCED INITIALIZATION
+                    const distributionCtx = document.getElementById('taskDistributionChart');
+                    if (distributionCtx) {
+                        taskDistributionChart = new Chart(distributionCtx.getContext('2d'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Completed', 'In Progress', 'To Do', 'Review'],
+                                datasets: [{
+                                    data: [1, 1, 1, 1], // Start with small values to show chart structure
+                                    backgroundColor: [
+                                        '#10b981', // Green for completed
+                                        '#ff6b35', // Orange for in progress
+                                        '#94a3b8', // Gray for to do
+                                        '#3b82f6'  // Blue for review
+                                    ],
+                                    borderWidth: 3,
+                                    borderColor: '#ffffff',
+                                    hoverOffset: 10
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            usePointStyle: true,
+                                            padding: 20
+                                        }
+                                    }
+                                },
+                                cutout: '60%',
+                                animation: {
+                                    animateRotate: true,
+                                    animateScale: false,
+                                    duration: 1000
+                                }
+                            }
+                        });
+                        console.log('📊 Task distribution chart initialized');
+                        
+                        // Force initial rendering to make chart visible
+                        setTimeout(() => {
+                            console.log('📊 Setting initial chart to show structure...');
+                            taskDistributionChart.update('none');
+                        }, 100);
+                        
+                    }
+                } catch (error) {
+                    console.error('📊 Error initializing task distribution chart:', error);
+                }
+                
+                // Set flag and resolve
+                chartsInitialized = true;
+                console.log('✅ Charts initialized successfully');
+                
+                // Small delay to ensure DOM is ready, then force donut chart update
+                setTimeout(() => {
+                    // Immediately try to update the donut chart with placeholder data
+                    if (taskDistributionChart) {
+                        console.log('📊 Forcing initial donut chart display...');
+                        taskDistributionChart.data.datasets[0].data = [1, 1, 1, 1];
+                        taskDistributionChart.update('none');
+                    }
+                    resolve();
+                }, 200);
+            });
+        }
+        
+        // Navigation functions
+        function goToProjects() {
+            window.location.href = '/Projects';
+        }
+        
+        function goToCalendar() {
+            window.location.href = '/Calendar';
+        }
+        
+        // Refresh dashboard
+        function refreshDashboard() {
+            console.log('🔄 Refreshing dashboard...');
+            loadFirebaseData().then(() => {
+                if (chartsInitialized && dataLoaded) {
+                    updateChartsWithRealData(projectsData, tasksData, []);
+                }
+            });
+        }
+        
+        // Calendar navigation (placeholder functions)
+        function previousMonth() {
+            console.log('📅 Previous month clicked');
+            if (currentCalendarDate && eventsData) {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+                const upcomingEvents = eventsData.filter(e => {
+                    if (!e.start) return false;
+                    const now = new Date();
+                    const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+                    const eventStart = new Date(e.start);
+                    const eventEnd = e.end ? new Date(e.end) : new Date(eventStart.getTime() + (60 * 60 * 1000));
+                    const isHappeningNow = eventStart <= now && now <= eventEnd;
+                    const isUpcoming = eventStart > now && eventStart <= thirtyDaysFromNow;
+                    return isHappeningNow || isUpcoming;
+                });
+                updateCalendarWidget(eventsData, upcomingEvents);
+            }
+        }
+        
+        function nextMonth() {
+            console.log('📅 Next month clicked');
+            if (currentCalendarDate && eventsData) {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+                const upcomingEvents = eventsData.filter(e => {
+                    if (!e.start) return false;
+                    const now = new Date();
+                    const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+                    const eventStart = new Date(e.start);
+                    const eventEnd = e.end ? new Date(e.end) : new Date(eventStart.getTime() + (60 * 60 * 1000));
+                    const isHappeningNow = eventStart <= now && now <= eventEnd;
+                    const isUpcoming = eventStart > now && eventStart <= thirtyDaysFromNow;
+                    return isHappeningNow || isUpcoming;
+                });
+                updateCalendarWidget(eventsData, upcomingEvents);
+            }
+        }
+        
+        // Initialize everything when Firebase is ready
+        waitForDashboardFirebase(function() {
+            console.log('✅ Firebase ready for dashboard');
+            setupDashboard();
+            console.log('✅ Dashboard setup complete');
+        });
+        
+        console.log('📊 Dashboard script loaded');
+    </script>
+}

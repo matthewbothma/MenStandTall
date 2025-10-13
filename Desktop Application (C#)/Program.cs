@@ -1,3 +1,5 @@
+using Wilproject.Configuration;
+
 namespace Wilproject
 {
     public class Program
@@ -7,12 +9,13 @@ namespace Wilproject
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-
             builder.Services.AddControllers();
             builder.Services.AddSignalR();
             builder.Services.AddRazorPages();
-
-
+            
+            // Register Firebase configuration
+            builder.Services.Configure<FirebaseConfig>(
+                builder.Configuration.GetSection("Firebase"));
 
             var app = builder.Build();
 
@@ -26,21 +29,12 @@ namespace Wilproject
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-         
-
             app.UseRouting();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapRazorPages();
-                endpoints.MapControllers();
-                endpoints.MapHub<Hubs.TaskHubs>("/taskHubs");
-            });
-        
-
             app.UseAuthorization();
 
             app.MapRazorPages();
+            app.MapControllers();
+            app.MapHub<Hubs.TaskHubs>("/taskHubs");
 
             app.Run();
         }
