@@ -373,6 +373,7 @@
     display: flex;
     gap: 0.5rem;
     margin-top: 1rem;
+    flex-wrap: wrap;
 }
 
 .task-btn {
@@ -416,6 +417,51 @@
     color: var(--brand-white);
     border-color: var(--brand-black);
     transform: translateY(-1px);
+}
+
+.task-btn.delete {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+}
+
+.task-btn.delete:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.task-btn.delete i {
+    font-size: 0.7rem;
+}
+
+/* Task Card Project Info */
+.task-project {
+    background: rgba(255, 107, 53, 0.1);
+    color: var(--brand-orange);
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.task-project i {
+    font-size: 0.75rem;
+    opacity: 0.8;
 }
 
 /* Empty Column States */

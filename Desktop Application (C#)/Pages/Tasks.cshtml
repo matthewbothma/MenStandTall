@@ -137,6 +137,14 @@
                 </div>
                 
                 <div class="form-floating">
+                    <select id="newTaskProject" class="form-control">
+                        <option value="">No Project (Standalone Task)</option>
+                        <!-- Projects will be loaded dynamically -->
+                    </select>
+                    <label for="newTaskProject">Assign to Project</label>
+                </div>
+                
+                <div class="form-floating">
                     <input type="date" id="newTaskDue" class="form-control" onchange="updateDueCountdown()" />
                     <label for="newTaskDue">Due Date</label>
                 </div>
@@ -197,491 +205,824 @@
 
 @section Scripts {
     <script>
-        // Tasks namespace to avoid conflicts with other scripts
-        (function() {
-            'use strict';
+        console.log('📝 Tasks script starting...');
+        
+        var tasksCurrentUser = null;
+        var tasksDB = null;
+        var tasks = [];
+        var projects = [];
+        
+        // Wait for global Firebase to be ready
+        function waitForTasksFirebase(callback) {
+            if (window.firebaseAuth && window.firebaseDB) {
+                callback();
+            } else {
+                setTimeout(function() { waitForTasksFirebase(callback); }, 100);
+            }
+        }
+        
+        // Setup tasks-specific functionality
+        function setupTasks() {
+            console.log('📝 Setting up tasks');
             
-            console.log('📝 Modern tasks script starting...');
+            if (!window.firebaseAuth || !window.firebaseDB) {
+                console.error('❌ Firebase not available in tasks');
+                return;
+            }
             
-            let tasks = [];
-            let tasksCurrentUser = null;
-            let tasksDB = null;
-
-            // Wait for global Firebase to be ready
-            function waitForTasksFirebase(callback) {
-                if (window.firebaseAuth && window.firebaseDB) {
-                    callback();
+            tasksDB = window.firebaseDB;
+            
+            // Authentication check for tasks
+            window.firebaseAuth.onAuthStateChanged(function(user) {
+                if (!user) {
+                    console.log('❌ No user in tasks, redirecting');
+                    window.location.href = '/';
                 } else {
-                    setTimeout(function() { waitForTasksFirebase(callback); }, 100);
+                    tasksCurrentUser = user;
+                    console.log('✅ Tasks user authenticated:', user.email);
+                    
+                    updateUserDisplay(user);
+                    loadTasksFromFirestore();
+                    loadProjectsForTasks();
+                }
+            });
+        }
+        
+        // Update user display
+        function updateUserDisplay(user) {
+            if (user) {
+                const displayName = user.displayName || user.email || 'User';
+                const emailSymbol = String.fromCharCode(64);
+                const atIndex = displayName.indexOf(emailSymbol);
+                const name = atIndex > -1 ? displayName.substring(0, atIndex) : displayName;
+                
+                // Update user name
+                const userNameEl = document.getElementById('task-user-name');
+                if (userNameEl) {
+                    userNameEl.textContent = name;
+                }
+                
+                // Update avatar initials
+                const avatarEl = document.getElementById('task-user-avatar');
+                if (avatarEl) {
+                    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                    avatarEl.textContent = initials;
                 }
             }
+        }
+        
+        // Load tasks from Firestore
+        async function loadTasksFromFirestore() {
+            if (!tasksDB || !tasksCurrentUser) return;
             
-            // Setup tasks-specific functionality
-            function setupTasks() {
-                console.log('📝 Setting up modern tasks');
+            try {
+                console.log('📝 Loading tasks from Firestore...');
                 
-                if (!window.firebaseAuth || !window.firebaseDB) {
-                    console.error('❌ Firebase not available in tasks');
-                    return;
+                const tasksSnapshot = await tasksDB.collection('tasks')
+                    .where('uid', '==', tasksCurrentUser.uid)
+                    .get();
+                
+                tasks = tasksSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                console.log('✅ Tasks loaded:', tasks.length);
+                console.log('📊 Task statuses:', tasks.map(t => ({ name: t.name, status: t.status })));
+                
+                renderTasksUI();
+                updateTaskCounts();
+                
+            } catch (error) {
+                console.error('❌ Error loading tasks:', error);
+                showTaskNotification('❌ Error loading tasks', 'error');
+            }
+        }
+        
+        // Load projects for task assignment
+        async function loadProjectsForTasks() {
+            if (!tasksDB || !tasksCurrentUser) return;
+            
+            try {
+                console.log('📋 Loading projects for task assignment...');
+                
+                let projectsSnapshot;
+                try {
+                    // Try to load all projects first (for company view)
+                    projectsSnapshot = await tasksDB.collection('projects').get();
+                    console.log('📋 Loaded all company projects');
+                } catch (permissionError) {
+                    console.log('📋 Company-wide access denied, loading user projects only');
+                    // Fallback to user-specific projects
+                    projectsSnapshot = await tasksDB.collection('projects')
+                        .where('userId', '==', tasksCurrentUser.uid)
+                        .get();
+                    console.log('📋 Loaded user projects only');
                 }
                 
-                tasksDB = window.firebaseDB;
-                
-                // Authentication check for tasks
-                window.firebaseAuth.onAuthStateChanged(function(user) {
-                    if (!user) {
-                        console.log('❌ No user in tasks, redirecting');
-                        window.location.href = '/';
-                    } else {
-                        tasksCurrentUser = user;
-                        console.log('✅ Tasks user authenticated:', user.email);
-                        
-                        updateUserDisplay(user);
-                        loadTasksFromFirestore();
-                    }
-                });
-            }
-
-            // Update user display
-            function updateUserDisplay(user) {
-                if (user) {
-                    const displayName = user.displayName || user.email || 'User';
-                    const emailSymbol = String.fromCharCode(64);
-                    const atIndex = displayName.indexOf(emailSymbol);
-                    const name = atIndex > -1 ? displayName.substring(0, atIndex) : displayName;
-                    
-                    // Update user name
-                    const userNameEl = document.getElementById('task-user-name');
-                    if (userNameEl) {
-                        userNameEl.textContent = name;
-                    }
-                    
-                    // Update avatar initials
-                    const avatarEl = document.getElementById('task-user-avatar');
-                    if (avatarEl) {
-                        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-                        avatarEl.textContent = initials;
-                    }
-                    
-                    // Show user info
-                    const userInfoEl = document.getElementById('user-info');
-                    if (userInfoEl) {
-                        userInfoEl.style.display = 'block';
-                    }
-                    
-                    console.log('✅ Task user display updated for:', name);
-                }
-            }
-
-            // Firestore functions
-            function loadTasksFromFirestore() {
-                if (!tasksDB || !tasksCurrentUser) return;
-                
-                tasksDB.collection('tasks').where('uid', '==', tasksCurrentUser.uid).get().then(snapshot => {
-                    tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    renderTasksUI();
-                    updateTaskCounts();
-                    console.log('✅ Tasks loaded:', tasks.length);
-                    
-                    // Trigger dashboard update
-                    if (typeof window.dispatchEvent === 'function') {
-                        const event = new CustomEvent('taskUpdated', {
-                            detail: { action: 'loaded', count: tasks.length }
-                        });
-                        window.dispatchEvent(event);
-                    }
-                    
-                }).catch(error => {
-                    console.error("Error loading tasks: ", error);
-                    // Still render UI even if loading fails
-                    renderTasksUI();
-                    updateTaskCounts();
-                });
-            }
-
-            function saveTaskToFirestore(task) {
-                if (!tasksDB || !tasksCurrentUser) return;
-                
-                if (task.id) {
-                    tasksDB.collection('tasks').doc(task.id).set(task);
-                } else {
-                    tasksDB.collection('tasks').add({ ...task, uid: tasksCurrentUser.uid }).then(docRef => {
-                        console.log('✅ Task saved with ID:', docRef.id);
-                        setTimeout(loadTasksFromFirestore, 500);
+                projects = projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(project => {
+                        // Only show active projects (not completed)
+                        const status = project.status?.toLowerCase();
+                        return status !== 'completed' && status !== 'complete' && status !== 'done';
                     });
-                }
-            }
-
-            function updateTaskInFirestore(task) {
-                if (!tasksDB || !tasksCurrentUser || !task.id) return;
-                tasksDB.collection('tasks').doc(task.id).set(task).then(() => {
-                    console.log('✅ Task updated');
-                    setTimeout(loadTasksFromFirestore, 500);
-                });
-            }
-
-            function renderTasksUI() {
-                // Clear all columns
-                ['todo', 'doing', 'done'].forEach(colId => {
-                    const col = document.getElementById(colId);
-                    if (col) {
-                        // Remove only task cards, keep empty state
-                        const taskCards = col.querySelectorAll('.task-card');
-                        taskCards.forEach(card => card.remove());
-                    }
-                });
                 
-                // Show empty states initially
-                showEmptyStates();
+                console.log('📋 Active projects found:', projects.length);
+                console.log('📋 Projects:', projects.map(p => ({ name: p.name, status: p.status })));
                 
-                // Render tasks
-                tasks.forEach(task => {
-                    let targetCol = null;
-                    if (task.status === 'To Do') {
-                        targetCol = document.getElementById('todo');
-                    } else if (task.status === 'Doing') {
-                        targetCol = document.getElementById('doing');
-                    } else if (task.status === 'Done') {
-                        targetCol = document.getElementById('done');
+                // Populate project dropdown
+                const projectSelect = document.getElementById('newTaskProject');
+                if (projectSelect) {
+                    // Clear existing options except the first one
+                    while (projectSelect.children.length > 1) {
+                        projectSelect.removeChild(projectSelect.lastChild);
                     }
                     
-                    if (targetCol) {
-                        // Hide empty state
-                        const emptyElement = targetCol.querySelector('.empty-column');
-                        if (emptyElement) emptyElement.style.display = 'none';
+                    if (projects.length > 0) {
+                        // Add projects
+                        projects.forEach(project => {
+                            const option = document.createElement('option');
+                            option.value = project.id;
+                            option.textContent = `${project.name} (${project.status || 'Active'})`;
+                            projectSelect.appendChild(option);
+                        });
                         
-                        targetCol.appendChild(createTaskElement(task));
+                        console.log(`✅ Loaded ${projects.length} projects for task assignment`);
+                        showTaskNotification(`📋 ${projects.length} projects available for task assignment`, 'info');
+                    } else {
+                        console.log('ℹ️ No active projects available for task assignment');
+                        showTaskNotification('ℹ️ No active projects found. Create a project first to assign tasks.', 'warning');
                     }
-                });
-            }
-
-            function showEmptyStates() {
-                ['todo', 'doing', 'done'].forEach(colId => {
-                    const col = document.getElementById(colId);
-                    const emptyElement = col?.querySelector('.empty-column');
-                    if (emptyElement) {
-                        emptyElement.style.display = 'flex';
-                    }
-                });
-            }
-
-            function updateTaskCounts() {
-                const todoTasks = tasks.filter(t => t.status === 'To Do');
-                const doingTasks = tasks.filter(t => t.status === 'Doing');
-                const doneTasks = tasks.filter(t => t.status === 'Done');
-                
-                // Update column counts
-                const todoCountEl = document.getElementById('todo-column-count');
-                const doingCountEl = document.getElementById('doing-column-count');
-                const doneCountEl = document.getElementById('done-column-count');
-                
-                if (todoCountEl) todoCountEl.textContent = todoTasks.length;
-                if (doingCountEl) doingCountEl.textContent = doingTasks.length;
-                if (doneCountEl) doneCountEl.textContent = doneTasks.length;
-                
-                // Update stats
-                const todoStatEl = document.getElementById('todo-count');
-                const doingStatEl = document.getElementById('doing-count');
-                const doneStatEl = document.getElementById('done-count');
-                const totalStatEl = document.getElementById('total-count');
-                
-                if (todoStatEl) todoStatEl.textContent = todoTasks.length;
-                if (doingStatEl) doingStatEl.textContent = doingTasks.length;
-                if (doneStatEl) doneStatEl.textContent = doneTasks.length;
-                if (totalStatEl) totalStatEl.textContent = tasks.length;
-            }
-
-            // Task functions
-            function addTask() {
-                const taskInput = document.getElementById('newTaskInput');
-                const descInput = document.getElementById('newTaskDesc');
-                const dueInput = document.getElementById('newTaskDue');
-                const priorityInput = document.getElementById('newTaskPriority');
-                
-                if (!taskInput || !descInput || !dueInput || !priorityInput) {
-                    console.error('❌ Task form elements not found');
-                    return;
                 }
                 
-                const taskName = taskInput.value.trim();
-                const description = descInput.value.trim();
-                const dueDate = dueInput.value;
-                const priority = priorityInput.value;
-                
-                if (taskName && tasksCurrentUser) {
-                    const newTask = {
-                        name: taskName,
-                        description: description,
-                        dueDate: dueDate,
-                        priority: priority,
-                        status: 'To Do',
-                        uid: tasksCurrentUser.uid,
-                        createdAt: new Date().toISOString()
-                    };
-                    
-                    saveTaskToFirestore(newTask);
-                    showTaskNotification('✅ Task created successfully!', 'success');
-                    
-                    // Clear form
-                    taskInput.value = '';
-                    descInput.value = '';
-                    dueInput.value = '';
-                    priorityInput.value = 'Low';
-                    
-                    const countdown = document.getElementById('dueCountdown');
-                    if (countdown) countdown.textContent = '';
-                }
+            } catch (error) {
+                console.error('❌ Error loading projects for tasks:', error);
+                showTaskNotification('❌ Error loading projects', 'error');
             }
-
-            // Global function for addTaskAndClose
-            window.addTaskAndClose = function() {
-                addTask();
+        }
+        
+        // Render tasks UI
+        function renderTasksUI() {
+            console.log('🎨 Rendering tasks UI...');
+            
+            // Clear all columns
+            const todoColumn = document.getElementById('todo');
+            const doingColumn = document.getElementById('doing');
+            const doneColumn = document.getElementById('done');
+            
+            if (todoColumn) todoColumn.innerHTML = '';
+            if (doingColumn) doingColumn.innerHTML = '';
+            if (doneColumn) doneColumn.innerHTML = '';
+            
+            // Group tasks by status
+            const todoTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'to do' || status === 'todo' || status === 'pending' || !status;
+            });
+            
+            const doingTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'doing' || status === 'in progress' || status === 'inprogress';
+            });
+            
+            const doneTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'done' || status === 'completed' || status === 'complete';
+            });
+            
+            console.log('📊 Task distribution:', {
+                todo: todoTasks.length,
+                doing: doingTasks.length,
+                done: doneTasks.length
+            });
+            
+            // Render tasks in each column
+            renderTasksInColumn(todoTasks, 'todo');
+            renderTasksInColumn(doingTasks, 'doing');
+            renderTasksInColumn(doneTasks, 'done');
+            
+            // Show empty states if needed
+            if (todoTasks.length === 0) showEmptyState('todo');
+            if (doingTasks.length === 0) showEmptyState('doing');
+            if (doneTasks.length === 0) showEmptyState('done');
+        }
+        
+        // Render tasks in a specific column
+        function renderTasksInColumn(taskList, columnId) {
+            const column = document.getElementById(columnId);
+            if (!column) return;
+            
+            taskList.forEach(task => {
+                const taskCard = createTaskCard(task);
+                column.appendChild(taskCard);
+            });
+        }
+        
+        // Create task card element
+        function createTaskCard(task) {
+            const taskDiv = document.createElement('div');
+            taskDiv.className = `task-card ${task.status?.toLowerCase().replace(' ', '-')}-task`;
+            taskDiv.draggable = true;
+            taskDiv.setAttribute('data-task-id', task.id);
+            
+            taskDiv.ondragstart = function(event) {
+                event.dataTransfer.setData('text/plain', task.id);
+                taskDiv.classList.add('dragging');
+            };
+            
+            taskDiv.ondragend = function(event) {
+                taskDiv.classList.remove('dragging');
+            };
+            
+            // Task header with name and priority
+            const header = document.createElement('div');
+            header.className = 'task-header';
+            
+            const name = document.createElement('h4');
+            name.className = 'task-name';
+            name.textContent = task.name;
+            
+            const priority = document.createElement('span');
+            priority.className = `task-priority ${task.priority?.toLowerCase() || 'medium'}`;
+            priority.textContent = task.priority || 'Medium';
+            
+            header.appendChild(name);
+            header.appendChild(priority);
+            taskDiv.appendChild(header);
+            
+            // Task description
+            if (task.description) {
+                const desc = document.createElement('div');
+                desc.className = 'task-description';
+                desc.textContent = task.description;
+                taskDiv.appendChild(desc);
+            }
+            
+            // Project info
+            if (task.projectId && task.projectName) {
+                const projectInfo = document.createElement('div');
+                projectInfo.className = 'task-project';
+                projectInfo.innerHTML = `<i class="fas fa-project-diagram"></i> ${task.projectName}`;
+                taskDiv.appendChild(projectInfo);
+            }
+            
+            // Task meta info
+            const meta = document.createElement('div');
+            meta.className = 'task-meta';
+            
+            // Due date
+            if (task.dueDate) {
+                const dueDate = new Date(task.dueDate);
+                const now = new Date();
+                const isOverdue = dueDate < now && task.status?.toLowerCase() !== 'done';
+                const isDueSoon = (dueDate - now) / (1000 * 60 * 60 * 24) <= 3 && !isOverdue;
+                
+                const due = document.createElement('div');
+                due.className = 'task-due';
+                if (isOverdue) due.classList.add('overdue');
+                if (isDueSoon) due.classList.add('due-soon');
+                
+                due.innerHTML = `<i class="fas fa-calendar"></i> ${dueDate.toLocaleDateString()}`;
+                meta.appendChild(due);
+            }
+            
+            // Created date
+            if (task.createdAt) {
+                const created = document.createElement('div');
+                created.className = 'task-created';
+                const createdDate = new Date(task.createdAt);
+                created.innerHTML = `<i class="fas fa-clock"></i> ${createdDate.toLocaleDateString()}`;
+                meta.appendChild(created);
+            }
+            
+            taskDiv.appendChild(meta);
+            
+            // Task actions
+            const actions = document.createElement('div');
+            actions.className = 'task-actions';
+            
+            // Status change buttons
+            if (task.status?.toLowerCase() === 'to do' || !task.status) {
+                const startBtn = document.createElement('button');
+                startBtn.className = 'task-btn start';
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Start';
+                startBtn.onclick = () => moveTaskToDoing(task.id);
+                actions.appendChild(startBtn);
+            }
+            
+            if (task.status?.toLowerCase() === 'doing' || task.status?.toLowerCase() === 'in progress') {
+                const completeBtn = document.createElement('button');
+                completeBtn.className = 'task-btn complete';
+                completeBtn.innerHTML = '<i class="fas fa-check"></i> Complete';
+                completeBtn.onclick = () => moveTaskToDone(task.id);
+                actions.appendChild(completeBtn);
+            }
+            
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'task-btn delete';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteBtn.onclick = () => deleteTask(task.id, task.name);
+            actions.appendChild(deleteBtn);
+            
+            taskDiv.appendChild(actions);
+            
+            return taskDiv;
+        }
+        
+        // Show empty state for column
+        function showEmptyState(columnId) {
+            const column = document.getElementById(columnId);
+            if (!column) return;
+            
+            const emptyStates = {
+                todo: {
+                    icon: 'fas fa-clipboard-list',
+                    title: 'No tasks yet',
+                    text: 'Add your first task to get started'
+                },
+                doing: {
+                    icon: 'fas fa-play-circle',
+                    title: 'Ready to work',
+                    text: 'Move tasks here when you start working'
+                },
+                done: {
+                    icon: 'fas fa-check-circle',
+                    title: 'Great job!',
+                    text: 'Completed tasks will appear here'
+                }
+            };
+            
+            const state = emptyStates[columnId];
+            if (!state) return;
+            
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'empty-column';
+            emptyDiv.innerHTML = `
+                <i class="${state.icon}"></i>
+                <h4>${state.title}</h4>
+                <p>${state.text}</p>
+            `;
+            
+            column.appendChild(emptyDiv);
+        }
+        
+        // Update task counts
+        function updateTaskCounts() {
+            const todoTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'to do' || status === 'todo' || status === 'pending' || !status;
+            });
+            
+            const doingTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'doing' || status === 'in progress' || status === 'inprogress';
+            });
+            
+            const doneTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'done' || status === 'completed' || status === 'complete';
+            });
+            
+            // Update statistics
+            const todoCountEl = document.getElementById('todo-count');
+            const doingCountEl = document.getElementById('doing-count');
+            const doneCountEl = document.getElementById('done-count');
+            const totalCountEl = document.getElementById('total-count');
+            
+            if (todoCountEl) todoCountEl.textContent = todoTasks.length;
+            if (doingCountEl) doingCountEl.textContent = doingTasks.length;
+            if (doneCountEl) doneCountEl.textContent = doneTasks.length;
+            if (totalCountEl) totalCountEl.textContent = tasks.length;
+            
+            // Update column counts
+            const todoColumnCountEl = document.getElementById('todo-column-count');
+            const doingColumnCountEl = document.getElementById('doing-column-count');
+            const doneColumnCountEl = document.getElementById('done-column-count');
+            
+            if (todoColumnCountEl) todoColumnCountEl.textContent = todoTasks.length;
+            if (doingColumnCountEl) doingColumnCountEl.textContent = doingTasks.length;
+            if (doneColumnCountEl) doneColumnCountEl.textContent = doneTasks.length;
+            
+            console.log('📊 Task counts updated:', {
+                todo: todoTasks.length,
+                doing: doingTasks.length,
+                done: doneTasks.length,
+                total: tasks.length
+            });
+        }
+        
+        // Add task
+        function addTask() {
+            const taskInput = document.getElementById('newTaskInput');
+            const descInput = document.getElementById('newTaskDesc');
+            const projectInput = document.getElementById('newTaskProject');
+            const dueInput = document.getElementById('newTaskDue');
+            const priorityInput = document.getElementById('newTaskPriority');
+            
+            if (!taskInput || !descInput || !projectInput || !dueInput || !priorityInput) {
+                console.error('❌ Task form elements not found');
+                return;
+            }
+            
+            const taskName = taskInput.value.trim();
+            const description = descInput.value.trim();
+            const projectId = projectInput.value;
+            const projectName = projectInput.selectedOptions[0]?.text.split(' (')[0] || '';
+            const dueDate = dueInput.value;
+            const priority = priorityInput.value;
+            
+            if (!taskName) {
+                showTaskNotification('⚠️ Please enter a task name', 'warning');
+                return;
+            }
+            
+            if (taskName && tasksCurrentUser) {
+                const newTask = {
+                    name: taskName,
+                    description: description,
+                    projectId: projectId || null,
+                    projectName: projectId ? projectName : null,
+                    dueDate: dueDate,
+                    priority: priority,
+                    status: 'To Do',
+                    uid: tasksCurrentUser.uid,
+                    createdAt: new Date().toISOString()
+                };
+                
+                saveTaskToFirestore(newTask);
+                
+                // Clear form
+                taskInput.value = '';
+                descInput.value = '';
+                projectInput.value = '';
+                dueInput.value = '';
+                priorityInput.value = 'Medium';
+                
+                const countdown = document.getElementById('dueCountdown');
+                if (countdown) countdown.textContent = '';
+            }
+        }
+        
+        // Add task and close modal
+        function addTaskAndClose() {
+            addTask();
+        }
+        
+        // Save task to Firestore
+        async function saveTaskToFirestore(task) {
+            if (!tasksDB) return;
+            
+            try {
+                console.log('💾 Saving task to Firestore:', task);
+                
+                const docRef = await tasksDB.collection('tasks').add(task);
+                console.log('✅ Task saved with ID:', docRef.id);
+                
+                // Add to local array with ID
+                const newTask = { ...task, id: docRef.id };
+                tasks.push(newTask);
+                
+                // Update UI
+                renderTasksUI();
+                updateTaskCounts();
+                
+                const successMessage = task.projectId ? 
+                    `✅ Task created and assigned to project!` : 
+                    '✅ Task created successfully!';
+                
+                showTaskNotification(successMessage, 'success');
+                
+                // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addTaskModal'));
                 if (modal) modal.hide();
-            };
-
-            // Global function for updateDueCountdown
-            window.updateDueCountdown = function() {
-                const dueInput = document.getElementById('newTaskDue');
-                const countdown = document.getElementById('dueCountdown');
                 
-                if (dueInput && dueInput.value && countdown) {
-                    const dueDate = new Date(dueInput.value);
-                    const today = new Date();
-                    const diffTime = dueDate - today;
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    
-                    if (diffDays < 0) {
-                        countdown.textContent = `⚠️ This date is ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''} in the past`;
-                        countdown.className = 'form-text text-danger';
-                    } else if (diffDays === 0) {
-                        countdown.textContent = '🎯 Due today';
-                        countdown.className = 'form-text text-warning';
-                    } else {
-                        countdown.textContent = `📅 ${diffDays} day${diffDays > 1 ? 's' : ''} from now`;
-                        countdown.className = 'form-text text-success';
-                    }
-                }
-            };
-
-            function createTaskElement(taskObj) {
-                const taskDiv = document.createElement('div');
-                taskDiv.classList.add('task-card', `${taskObj.status.toLowerCase().replace(' ', '')}-task`);
-                taskDiv.setAttribute('draggable', 'true');
-                taskDiv.setAttribute('data-task-id', taskObj.id);
-
-                // Task header
-                const headerDiv = document.createElement('div');
-                headerDiv.className = 'task-header';
+                // Trigger dashboard update
+                triggerDashboardUpdate('created', newTask);
                 
-                const nameEl = document.createElement('h6');
-                nameEl.className = 'task-name';
-                nameEl.textContent = taskObj.name;
+            } catch (error) {
+                console.error('❌ Error saving task:', error);
+                showTaskNotification('❌ Error saving task', 'error');
+            }
+        }
+        
+        // Update task in Firestore
+        async function updateTaskInFirestore(task) {
+            if (!tasksDB || !task.id) return;
+            
+            try {
+                console.log('🔄 Updating task in Firestore:', task.id);
                 
-                const priorityEl = document.createElement('span');
-                priorityEl.className = `task-priority ${taskObj.priority.toLowerCase()}`;
-                priorityEl.textContent = taskObj.priority;
-                
-                headerDiv.appendChild(nameEl);
-                headerDiv.appendChild(priorityEl);
-                taskDiv.appendChild(headerDiv);
-
-                // Task description
-                if (taskObj.description) {
-                    const descEl = document.createElement('div');
-                    descEl.className = 'task-description';
-                    descEl.textContent = taskObj.description;
-                    taskDiv.appendChild(descEl);
-                }
-
-                // Task meta
-                if (taskObj.dueDate) {
-                    const metaDiv = document.createElement('div');
-                    metaDiv.className = 'task-meta';
-                    
-                    const dueEl = document.createElement('div');
-                    dueEl.className = 'task-due';
-                    
-                    const dueDate = new Date(taskObj.dueDate);
-                    const today = new Date();
-                    const diffTime = dueDate - today;
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    
-                    if (diffDays < 0) {
-                        dueEl.classList.add('overdue');
-                        dueEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Overdue`;
-                    } else if (diffDays <= 2) {
-                        dueEl.classList.add('due-soon');
-                        dueEl.innerHTML = `<i class="fas fa-clock"></i> Due ${diffDays === 0 ? 'today' : `in ${diffDays} day${diffDays > 1 ? 's' : ''}`}`;
-                    } else {
-                        dueEl.innerHTML = `<i class="fas fa-calendar"></i> Due ${dueDate.toLocaleDateString()}`;
-                    }
-                    
-                    metaDiv.appendChild(dueEl);
-                    taskDiv.appendChild(metaDiv);
-                }
-
-                // Task actions
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'task-actions';
-
-                if (taskObj.status === 'To Do') {
-                    const startBtn = document.createElement('button');
-                    startBtn.className = 'task-btn start';
-                    startBtn.innerHTML = '<i class="fas fa-play"></i> Start';
-                    startBtn.onclick = function(e) { 
-                        e.stopPropagation(); 
-                        moveTaskToDoing(taskObj.id); 
-                    };
-                    actionsDiv.appendChild(startBtn);
-                } else if (taskObj.status === 'Doing') {
-                    const completeBtn = document.createElement('button');
-                    completeBtn.className = 'task-btn complete';
-                    completeBtn.innerHTML = '<i class="fas fa-check"></i> Complete';
-                    completeBtn.onclick = function(e) { 
-                        e.stopPropagation(); 
-                        moveTaskToDone(taskObj.id); 
-                    };
-                    actionsDiv.appendChild(completeBtn);
-                }
-
-                taskDiv.appendChild(actionsDiv);
-
-                // Add drag event listeners
-                taskDiv.addEventListener('dragstart', function(e) {
-                    e.dataTransfer.setData('text/plain', taskObj.id);
-                    taskDiv.classList.add('dragging');
+                await tasksDB.collection('tasks').doc(task.id).update({
+                    status: task.status,
+                    updatedAt: new Date().toISOString()
                 });
+                
+                console.log('✅ Task updated successfully');
+                
+                // Update UI
+                renderTasksUI();
+                updateTaskCounts();
+                
+                // Update project progress if task is assigned to a project
+                if (task.projectId) {
+                    updateProjectProgress(task.projectId);
+                }
+                
+                // Trigger dashboard update
+                triggerDashboardUpdate('updated', task);
+                
+            } catch (error) {
+                console.error('❌ Error updating task:', error);
+                showTaskNotification('❌ Error updating task', 'error');
+            }
+        }
+        
+        // Move task functions
+        function moveTaskToDoing(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.status = 'Doing';
+                updateTaskInFirestore(task);
+                showTaskNotification('▶️ Task moved to In Progress!', 'info');
+            }
+        }
 
-                taskDiv.addEventListener('dragend', function(e) {
-                    taskDiv.classList.remove('dragging');
+        function moveTaskToDone(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.status = 'Done';
+                updateTaskInFirestore(task);
+                showTaskNotification('✅ Task completed!', 'success');
+            }
+        }
+        
+        // Delete task
+        function deleteTask(taskId, taskName) {
+            if (!tasksDB || !tasksCurrentUser) return;
+            
+            if (!confirm(`Are you sure you want to delete "${taskName}"?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+            
+            console.log('🗑️ Deleting task:', taskId);
+            
+            tasksDB.collection('tasks').doc(taskId).delete().then(() => {
+                console.log('✅ Task deleted successfully');
+                
+                // Find the task before removing
+                const deletedTask = tasks.find(t => t.id === taskId);
+                
+                // Remove from local array
+                tasks = tasks.filter(t => t.id !== taskId);
+                
+                // Update UI
+                renderTasksUI();
+                updateTaskCounts();
+                
+                showTaskNotification('🗑️ Task deleted successfully!', 'success');
+                
+                // Update project progress if task was assigned to a project
+                if (deletedTask && deletedTask.projectId) {
+                    updateProjectProgress(deletedTask.projectId);
+                }
+                
+                // Trigger dashboard update
+                triggerDashboardUpdate('deleted', deletedTask);
+                
+            }).catch(error => {
+                console.error('❌ Error deleting task:', error);
+                showTaskNotification('❌ Error deleting task', 'error');
+            });
+        }
+        
+        // Update project progress
+        async function updateProjectProgress(projectId) {
+            if (!projectId || !tasksDB || !tasksCurrentUser) return;
+            
+            try {
+                console.log('📊 Updating project progress for:', projectId);
+                
+                // Get all tasks for this project
+                const projectTasksSnapshot = await tasksDB.collection('tasks')
+                    .where('projectId', '==', projectId)
+                    .where('uid', '==', tasksCurrentUser.uid)
+                    .get();
+                
+                const projectTasks = projectTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                if (projectTasks.length === 0) {
+                    console.log('ℹ️ No tasks found for project');
+                    return;
+                }
+                
+                // Calculate progress
+                const completedTasks = projectTasks.filter(task => {
+                    const status = task.status?.toLowerCase();
+                    return status === 'done' || status === 'completed' || status === 'complete';
                 });
-
-                return taskDiv;
+                
+                const progressPercentage = Math.round((completedTasks.length / projectTasks.length) * 100);
+                
+                console.log(`📊 Project ${projectId}: ${completedTasks.length}/${projectTasks.length} tasks completed (${progressPercentage}%)`);
+                
+                // Update project progress in Firebase
+                await tasksDB.collection('projects').doc(projectId).update({
+                    progress: progressPercentage,
+                    updatedAt: new Date().toISOString()
+                });
+                
+                console.log(`✅ Project progress updated to ${progressPercentage}%`);
+                
+                showTaskNotification(`📊 Project progress updated: ${progressPercentage}%`, 'info');
+                
+            } catch (error) {
+                console.error('❌ Error updating project progress:', error);
             }
-
-            function moveTaskToDoing(taskId) {
-                const task = tasks.find(t => t.id === taskId);
-                if (task) {
-                    task.status = 'Doing';
-                    updateTaskInFirestore(task);
-                    showTaskNotification('▶️ Task moved to In Progress!', 'info');
-                }
+        }
+        
+        // Trigger dashboard update
+        function triggerDashboardUpdate(action, task) {
+            if (typeof window.dispatchEvent === 'function') {
+                const event = new CustomEvent('taskUpdated', {
+                    detail: { 
+                        action: action,
+                        task: task,
+                        taskId: task.id,
+                        projectId: task.projectId,
+                        totalTasks: tasks.length,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+                window.dispatchEvent(event);
+                console.log('📡 Dashboard update event dispatched:', action);
             }
-
-            function moveTaskToDone(taskId) {
-                const task = tasks.find(t => t.id === taskId);
-                if (task) {
-                    task.status = 'Done';
-                    updateTaskInFirestore(task);
-                    showTaskNotification('✅ Task completed!', 'success');
-                }
-            }
-
-            // Global drag and drop functions
-            window.allowDrop = function(ev) {
-                ev.preventDefault();
-                ev.currentTarget.classList.add('drag-over');
-            };
-
-            window.drop = function(ev, status) {
-                ev.preventDefault();
-                ev.currentTarget.classList.remove('drag-over');
+        }
+        
+        // Update due date countdown
+        function updateDueCountdown() {
+            const dueInput = document.getElementById('newTaskDue');
+            const countdown = document.getElementById('dueCountdown');
+            
+            if (!dueInput || !countdown) return;
+            
+            const dueDate = new Date(dueInput.value);
+            const now = new Date();
+            
+            if (dueInput.value) {
+                const timeDiff = dueDate - now;
+                const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
                 
-                const taskId = ev.dataTransfer.getData('text/plain');
-                const task = tasks.find(t => t.id === taskId);
-                
-                if (task && task.status !== status) {
-                    task.status = status;
-                    updateTaskInFirestore(task);
-                    showTaskNotification(`📋 Task moved to ${status}!`, 'info');
-                }
-            };
-
-            // Global function for renderAllTasksModal
-            window.renderAllTasksModal = function() {
-                console.log('📋 Rendering all tasks modal...');
-                const modalBody = document.getElementById('allTasksModalBody');
-                const filter = document.getElementById('taskFilter')?.value || 'all';
-                
-                if (!modalBody) return;
-                
-                let filteredTasks = tasks;
-                if (filter === 'completed') {
-                    filteredTasks = tasks.filter(t => t.status === 'Done');
-                } else if (filter === 'ongoing') {
-                    filteredTasks = tasks.filter(t => t.status !== 'Done');
-                }
-                
-                if (filteredTasks.length === 0) {
-                    modalBody.innerHTML = `
-                        <div class="text-center py-4">
-                            <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
-                            <h5>No ${filter} tasks found</h5>
-                            <p class="text-muted">Tasks matching your filter will appear here</p>
-                        </div>
-                    `;
+                if (daysDiff < 0) {
+                    countdown.textContent = `⚠️ This date is in the past`;
+                    countdown.className = 'form-text text-danger';
+                } else if (daysDiff === 0) {
+                    countdown.textContent = `📅 Due today`;
+                    countdown.className = 'form-text text-warning';
+                } else if (daysDiff === 1) {
+                    countdown.textContent = `📅 Due tomorrow`;
+                    countdown.className = 'form-text text-warning';
                 } else {
-                    modalBody.innerHTML = filteredTasks.map(task => `
-                        <div class="task-item mb-2 p-3 border rounded">
+                    countdown.textContent = `📅 Due in ${daysDiff} days`;
+                    countdown.className = 'form-text text-muted';
+                }
+            } else {
+                countdown.textContent = '';
+            }
+        }
+        
+        // Render all tasks modal
+        function renderAllTasksModal() {
+            console.log('📋 Rendering all tasks modal...');
+            const modalBody = document.getElementById('allTasksModalBody');
+            const filter = document.getElementById('taskFilter')?.value || 'all';
+            
+            if (!modalBody) return;
+            
+            let filteredTasks = tasks;
+            if (filter === 'completed') {
+                filteredTasks = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status === 'done' || status === 'completed' || status === 'complete';
+                });
+            } else if (filter === 'ongoing') {
+                filteredTasks = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status !== 'done' && status !== 'completed' && status !== 'complete';
+                });
+            }
+            
+            if (filteredTasks.length === 0) {
+                modalBody.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                        <h5>No ${filter} tasks found</h5>
+                        <p class="text-muted">Tasks matching your filter will appear here</p>
+                    </div>
+                `;
+            } else {
+                modalBody.innerHTML = filteredTasks.map(task => `
+                    <div class="task-item mb-2 p-3 border rounded d-flex justify-content-between align-items-center">
+                        <div>
                             <h6>${task.name}</h6>
                             <p class="mb-1">${task.description || 'No description'}</p>
-                            <small class="text-muted">Status: ${task.status} | Priority: ${task.priority}</small>
+                            ${task.projectName ? `<small class="text-info"><i class="fas fa-project-diagram"></i> ${task.projectName}</small><br>` : ''}
+                            <small class="text-muted">Status: ${task.status || 'To Do'} | Priority: ${task.priority || 'Medium'}</small>
                         </div>
-                    `).join('');
-                }
-            };
-
-            // Add drag leave event
-            document.addEventListener('DOMContentLoaded', function() {
-                ['todo', 'doing', 'done'].forEach(colId => {
-                    const col = document.getElementById(colId);
-                    if (col) {
-                        col.addEventListener('dragleave', function(e) {
-                            // Only remove drag-over if we're leaving the column entirely
-                            if (!col.contains(e.relatedTarget)) {
-                                col.classList.remove('drag-over');
-                            }
-                        });
-                    }
-                });
-            });
-
-            // Show task notification
-            function showTaskNotification(message, type) {
-                type = type || 'info';
-                const notification = document.createElement('div');
-                notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: ' + 
-                    (type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6') + 
-                    '; color: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; opacity: 0; transform: translateX(100%); transition: all 0.3s ease; max-width: 300px; font-weight: 500;';
-                notification.textContent = message;
-                
-                document.body.appendChild(notification);
-                
-                setTimeout(function() {
-                    notification.style.opacity = '1';
-                    notification.style.transform = 'translateX(0)';
-                }, 100);
-                
-                setTimeout(function() {
-                    notification.style.opacity = '0';
-                    notification.style.transform = 'translateX(100%)';
-                    setTimeout(function() {
-                        if (document.body.contains(notification)) {
-                            document.body.removeChild(notification);
-                        }
-                    }, 300);
-                }, 3000);
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTask('${task.id}', '${task.name.replace(/'/g, '\\\'')}')" title="Delete Task">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `).join('');
             }
+        }
+        
+        // Drag and drop functions
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('drag-over');
+        }
+
+        function drop(ev, status) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drag-over');
             
-            // Initialize everything when Firebase is ready
-            waitForTasksFirebase(function() {
-                console.log('✅ Firebase ready for modern tasks');
-                setupTasks();
-                console.log('✅ Modern tasks setup complete');
-            });
+            const taskId = ev.dataTransfer.getData('text/plain');
+            const task = tasks.find(t => t.id === taskId);
             
-            console.log('📝 Modern tasks script loaded');
-        })();
+            if (task && task.status !== status) {
+                const oldStatus = task.status;
+                task.status = status;
+                updateTaskInFirestore(task);
+                showTaskNotification(`📋 Task moved to ${status}!`, 'info');
+            }
+        }
+        
+        // Show notification
+        function showTaskNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                max-width: 300px;
+                font-weight: 500;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // Make functions globally available
+        window.addTaskAndClose = addTaskAndClose;
+        window.updateDueCountdown = updateDueCountdown;
+        window.renderAllTasksModal = renderAllTasksModal;
+        window.deleteTask = deleteTask;
+        window.allowDrop = allowDrop;
+        window.drop = drop;
+        
+        // Modal event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const addTaskModal = document.getElementById('addTaskModal');
+            if (addTaskModal) {
+                addTaskModal.addEventListener('show.bs.modal', function() {
+                    // Reload projects when modal opens
+                    loadProjectsForTasks();
+                });
+            }
+        });
+        
+        // Initialize everything when Firebase is ready
+        waitForTasksFirebase(function() {
+            console.log('✅ Firebase ready for tasks');
+            setupTasks();
+            console.log('✅ Tasks setup complete');
+        });
+        
+        console.log('📝 Tasks script loaded');
     </script>
 }
