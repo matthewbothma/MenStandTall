@@ -271,16 +271,18 @@
     font-size: 0.9rem;
 }
 
-/* Events */
+/* Events - Enhanced Visibility */
 .fc-event {
     border: none;
     border-radius: 6px;
     padding: 0.25rem 0.5rem;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.85rem;
     margin: 1px 2px;
     cursor: pointer;
     transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid rgba(255, 255, 255, 0.3);
 }
 
 .fc-event:hover {
@@ -289,33 +291,39 @@
 }
 
 .fc-event-title {
-    font-weight: 600;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* Event Categories */
+/* Event Categories - More Prominent Colors */
 .fc-event[data-category="meeting"] {
     background: var(--brand-orange);
     color: var(--brand-white);
+    border-left-color: var(--brand-orange-dark);
 }
 
 .fc-event[data-category="project"] {
     background: var(--brand-black);
     color: var(--brand-white);
+    border-left-color: var(--brand-black-light);
 }
 
 .fc-event[data-category="deadline"] {
     background: #ef4444;
     color: var(--brand-white);
+    border-left-color: #dc2626;
 }
 
 .fc-event[data-category="personal"] {
     background: var(--brand-orange-light);
     color: var(--brand-white);
+    border-left-color: var(--brand-orange);
 }
 
 .fc-event[data-category="other"] {
     background: var(--brand-black-medium);
     color: var(--brand-white);
+    border-left-color: var(--brand-black);
 }
 
 /* Loading State */

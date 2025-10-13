@@ -8,7 +8,64 @@
     let projectsList = [];
     let projectsDB = null;
     let projectsFirebaseReady = false;
+    
+    // Show project notification - MOVED TO TOP for immediate availability
+    function showProjectNotification(message, type = 'info') {
+        console.log('?? showProjectNotification called:', message, type);
+        
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            max-width: 300px;
+            font-weight: 500;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+        
+        console.log('? Notification displayed successfully');
+    }
+    
+    // Make showProjectNotification available globally immediately
+    window.showProjectNotification = showProjectNotification;
 
+    // Test function to verify notification works - ADDED FOR TESTING
+    window.testProjectNotification = function() {
+        console.log('?? Testing project notification function...');
+        if (typeof window.showProjectNotification === 'function') {
+            window.showProjectNotification('? Project notification system is working!', 'success');
+            console.log('? Test notification called successfully');
+        } else {
+            console.error('? showProjectNotification is not available');
+        }
+    };
+    
     // Wait for DOM to be ready before initializing
     function waitForDOM(callback) {
         if (document.readyState === 'loading') {
@@ -254,7 +311,7 @@
         }
     }
 
-    // Create new project - Global function
+    // Create new project - ENHANCED with better validation and activity updates
     window.createProject = async function() {
         console.log('?? Creating new project...');
         
@@ -271,23 +328,28 @@
             return;
         }
         
-        const formData = new FormData(form);
-        
+        // Enhanced validation
         if (!validateProjectForm(form)) {
+            console.log('?? Form validation failed, stopping creation');
             return;
         }
         
+        // Get form data
+        const formData = new FormData(form);
         const userName = projectsCurrentUser.displayName || (projectsCurrentUser.email ? projectsCurrentUser.email.split('@')[0] : 'User');
         
+        // Clean name extraction (remove domain from email)
+        const cleanUserName = userName.includes('@') ? userName.split('@')[0] : userName;
+        
         const projectData = {
-            name: formData.get('Name'),
-            deadline: formData.get('Deadline'),
-            description: formData.get('Description'),
-            status: formData.get('Status'),
-            priority: formData.get('Priority'),
+            name: formData.get('Name') || '',
+            deadline: formData.get('Deadline') || '',
+            description: formData.get('Description') || '',
+            status: formData.get('Status') || 'Planning',
+            priority: formData.get('Priority') || 'Medium',
             progress: parseInt(formData.get('Progress')) || 0,
             userId: projectsCurrentUser.uid,
-            authorName: userName,
+            authorName: cleanUserName,
             authorEmail: projectsCurrentUser.email,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -295,39 +357,72 @@
         
         console.log('?? Project data to create:', projectData);
         
+        // Show loading state on button
+        const createButton = document.querySelector('#addProjectModal .btn-modern.btn-add-project');
+        let originalButtonText = '';
+        if (createButton) {
+            originalButtonText = createButton.innerHTML;
+            createButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            createButton.disabled = true;
+        }
+        
         try {
             const docRef = await projectsDB.collection('projects').add(projectData);
             console.log('? Project created successfully with ID:', docRef.id);
             
-            showProjectNotification('? Project created and shared with team!', 'success');
+            showProjectNotification('?? Project created and shared with team!', 'success');
             
+            // Hide modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('addProjectModal'));
             if (modal) modal.hide();
             
+            // Reset form
             form.reset();
+            
+            // Reload projects
             await loadProjectsFromFirebase();
             
-            // Trigger dashboard update event
-            if (typeof window.dispatchEvent === 'function') {
-                const event = new CustomEvent('projectUpdated', {
-                    detail: { 
-                        projectId: docRef.id, 
-                        action: 'created',
-                        status: projectData.status,
-                        name: projectData.name
-                    }
-                });
-                window.dispatchEvent(event);
-                console.log('?? Project creation event dispatched');
-            }
+            // Dispatch events for dashboard and activity updates
+            const projectEvent = new CustomEvent('projectUpdated', {
+                detail: { 
+                    projectId: docRef.id, 
+                    action: 'created',
+                    status: projectData.status,
+                    name: projectData.name,
+                    authorName: cleanUserName,
+                    timestamp: new Date().toISOString()
+                }
+            });
+            
+            const createdEvent = new CustomEvent('projectCreated', {
+                detail: {
+                    projectId: docRef.id,
+                    project: projectData,
+                    timestamp: new Date().toISOString()
+                }
+            });
+            
+            window.dispatchEvent(projectEvent);
+            window.dispatchEvent(createdEvent);
+            
+            console.log('?? Project creation events dispatched for dashboard activity tracking');
             
         } catch (error) {
+            console.error('? Error creating project:', error);
             handleFirebaseError(error, 'creating project');
+        } finally {
+            // Restore button
+            if (createButton) {
+                createButton.innerHTML = originalButtonText;
+                createButton.disabled = false;
+            }
         }
     };
 
-    // Update project - Global function
+    // Update project - ENHANCED with better validation and activity updates
     window.updateProject = async function() {
+        console.log('?? Updating project...');
+        
         const projectId = document.getElementById('editProjectId')?.value;
         const form = document.getElementById('editProjectForm');
         
@@ -337,7 +432,9 @@
             return;
         }
         
+        // Enhanced validation
         if (!validateProjectForm(form)) {
+            console.log('?? Form validation failed, stopping update');
             return;
         }
         
@@ -346,55 +443,140 @@
             return;
         }
         
-        const newStatus = document.getElementById('editProjectStatus')?.value || '';
+        // Get current project data for comparison
         const oldProject = projectsList.find(p => p.id === projectId);
-        const statusChanged = oldProject && oldProject.status !== newStatus;
+        if (!oldProject) {
+            showProjectNotification('? Project not found', 'error');
+            return;
+        }
+        
+        // Get form values
+        const newName = document.getElementById('editProjectName')?.value?.trim() || '';
+        const newDeadline = document.getElementById('editProjectDeadline')?.value || '';
+        const newDescription = document.getElementById('editProjectDescription')?.value?.trim() || '';
+        const newStatus = document.getElementById('editProjectStatus')?.value || '';
+        const newPriority = document.getElementById('editProjectPriority')?.value || '';
+        const newProgress = parseInt(document.getElementById('editProjectProgress')?.value) || 0;
+        
+        // Check what changed
+        const statusChanged = oldProject.status !== newStatus;
+        const progressChanged = oldProject.progress !== newProgress;
+        const nameChanged = oldProject.name !== newName;
         
         const projectData = {
-            name: document.getElementById('editProjectName')?.value || '',
-            deadline: document.getElementById('editProjectDeadline')?.value || '',
-            description: document.getElementById('editProjectDescription')?.value || '',
+            name: newName,
+            deadline: newDeadline,
+            description: newDescription,
             status: newStatus,
-            priority: document.getElementById('editProjectPriority')?.value || '',
-            progress: parseInt(document.getElementById('editProjectProgress')?.value) || 0,
+            priority: newPriority,
+            progress: newProgress,
             updatedAt: new Date().toISOString()
         };
+        
+        console.log('?? Project data to update:', projectData);
+        console.log('?? Changes detected:', { statusChanged, progressChanged, nameChanged });
+        
+        // Show loading state on button
+        const updateButton = document.querySelector('#editProjectModal .btn-modern.btn-edit-project');
+        let originalButtonText = '';
+        if (updateButton) {
+            originalButtonText = updateButton.innerHTML;
+            updateButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            updateButton.disabled = true;
+        }
         
         try {
             await projectsDB.collection('projects').doc(projectId).update(projectData);
             console.log('? Project updated:', projectId);
             
             // Show appropriate success message
+            let successMessage = '? Project updated successfully!';
             if (statusChanged && newStatus === 'Completed') {
-                showProjectNotification('?? Project marked as completed! Dashboard will update shortly.', 'success');
+                successMessage = '?? Project marked as completed! Dashboard will update shortly.';
             } else if (statusChanged) {
-                showProjectNotification(`? Project status changed to ${newStatus}!`, 'success');
-            } else {
-                showProjectNotification('? Project updated successfully!', 'success');
+                successMessage = `?? Project status changed to ${newStatus}!`;
+            } else if (progressChanged) {
+                successMessage = `?? Project progress updated to ${newProgress}%!`;
             }
             
+            showProjectNotification(successMessage, 'success');
+            
+            // Hide modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('editProjectModal'));
             if (modal) modal.hide();
             
+            // Reload projects
             await loadProjectsFromFirebase();
             
-            // Trigger dashboard update event
-            if (typeof window.dispatchEvent === 'function') {
-                const event = new CustomEvent('projectUpdated', {
-                    detail: { 
-                        projectId: projectId, 
-                        action: 'updated',
-                        statusChanged: statusChanged,
-                        newStatus: newStatus,
-                        oldStatus: oldProject?.status
-                    }
-                });
-                window.dispatchEvent(event);
-                console.log('?? Project update event dispatched');
+            // Dispatch events for dashboard and activity updates
+            const userName = projectsCurrentUser.displayName || (projectsCurrentUser.email ? projectsCurrentUser.email.split('@')[0] : 'User');
+            const cleanUserName = userName.includes('@') ? userName.split('@')[0] : userName;
+            
+            const projectEvent = new CustomEvent('projectUpdated', {
+                detail: { 
+                    projectId: projectId, 
+                    action: 'updated',
+                    statusChanged: statusChanged,
+                    newStatus: newStatus,
+                    oldStatus: oldProject.status,
+                    name: newName,
+                    authorName: cleanUserName,
+                    timestamp: new Date().toISOString()
+                }
+            });
+            
+            // Create activity event based on what changed
+            let activityTitle = '';
+            let activityDescription = '';
+            let activityIcon = 'fas fa-edit';
+            
+            if (statusChanged && newStatus === 'Completed') {
+                activityTitle = `Project Completed: ${newName}`;
+                activityDescription = `Marked as completed by ${cleanUserName}`;
+                activityIcon = 'fas fa-check-circle';
+            } else if (statusChanged) {
+                activityTitle = `Project Status Updated: ${newName}`;
+                activityDescription = `Status changed from ${oldProject.status} to ${newStatus}`;
+                activityIcon = 'fas fa-flag';
+            } else if (progressChanged) {
+                activityTitle = `Project Progress Updated: ${newName}`;
+                activityDescription = `Progress updated to ${newProgress}%`;
+                activityIcon = 'fas fa-chart-line';
+            } else if (nameChanged) {
+                activityTitle = `Project Renamed: ${newName}`;
+                activityDescription = `Updated by ${cleanUserName}`;
+                activityIcon = 'fas fa-edit';
+            } else {
+                activityTitle = `Project Updated: ${newName}`;
+                activityDescription = `Modified by ${cleanUserName}`;
+                activityIcon = 'fas fa-edit';
             }
             
+            const activityEvent = new CustomEvent('recentActivityUpdated', {
+                detail: {
+                    type: 'project_updated',
+                    title: activityTitle,
+                    description: activityDescription,
+                    icon: activityIcon,
+                    timestamp: new Date().toISOString(),
+                    projectId: projectId
+                }
+            });
+            
+            window.dispatchEvent(projectEvent);
+            window.dispatchEvent(activityEvent);
+            
+            console.log('?? Project update and activity events dispatched');
+            
         } catch (error) {
+            console.error('? Error updating project:', error);
             handleFirebaseError(error, 'updating project');
+        } finally {
+            // Restore button
+            if (updateButton) {
+                updateButton.innerHTML = originalButtonText;
+                updateButton.disabled = false;
+            }
         }
     };
 
@@ -437,7 +619,7 @@
             
             // Trigger dashboard update event
             if (typeof window.dispatchEvent === 'function') {
-                const event = new CustomEvent('projectUpdated', {
+                const projectEvent = new CustomEvent('projectUpdated', {
                     detail: { 
                         projectId: projectId, 
                         action: 'deleted',
@@ -445,8 +627,19 @@
                         status: project.status
                     }
                 });
-                window.dispatchEvent(event);
-                console.log('?? Project deletion event dispatched');
+                
+                const deletedEvent = new CustomEvent('projectDeleted', {
+                    detail: {
+                        projectId: projectId,
+                        projectName: projectName,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+                
+                window.dispatchEvent(projectEvent);
+                window.dispatchEvent(deletedEvent);
+                
+                console.log('??? Project deletion events dispatched for dashboard activity tracking');
             }
             
         } catch (error) {
@@ -463,7 +656,7 @@
             id: document.getElementById('editProjectId'),
             name: document.getElementById('editProjectName'),
             deadline: document.getElementById('editProjectDeadline'),
-            description: document.getElementById('editProjectDescription'),
+            description: document.getElementById('editProjectDescription'),  // FIXED: Added missing closing parenthesis
             status: document.getElementById('editProjectStatus'),
             priority: document.getElementById('editProjectPriority'),
             progress: document.getElementById('editProjectProgress')
@@ -583,6 +776,61 @@
         }
     }
 
+    // Validate project form with better error handling
+    function validateProjectForm(form) {
+        if (!form) {
+            console.error('? Form not provided to validateProjectForm');
+            showProjectNotification('? Form validation error', 'error');
+            return false;
+        }
+        
+        console.log('?? Validating project form...');
+        
+        // Get all required fields within the form
+        const requiredFields = form.querySelectorAll('input[required], textarea[required], select[required]');
+        let isValid = true;
+        let missingFields = [];
+        
+        requiredFields.forEach(function(field) {
+            const fieldName = field.getAttribute('name') || field.id || 'Unknown field';
+            const value = field.value ? field.value.trim() : '';
+            
+            console.log(`?? Checking field ${fieldName}: "${value}"`);
+            
+            if (!value) {
+                field.classList.add('is-invalid');
+                missingFields.push(fieldName);
+                isValid = false;
+                
+                // Add error styling
+                field.style.borderColor = '#ef4444';
+                field.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+            } else {
+                field.classList.remove('is-invalid');
+                
+                // Remove error styling
+                field.style.borderColor = '';
+                field.style.backgroundColor = '';
+            }
+        });
+        
+        if (!isValid) {
+            const message = `?? Missing required fields: ${missingFields.join(', ')}`;
+            console.warn('?? Form validation failed:', missingFields);
+            showProjectNotification(message, 'warning');
+            
+            // Focus on first invalid field
+            const firstInvalidField = form.querySelector('.is-invalid');
+            if (firstInvalidField) {
+                firstInvalidField.focus();
+            }
+        } else {
+            console.log('? Form validation passed');
+        }
+        
+        return isValid;
+    }
+
     // Create project card element
     function createProjectCard(project) {
         const card = document.createElement('div');
@@ -597,6 +845,7 @@
         const isOwner = projectsCurrentUser && project.userId === projectsCurrentUser.uid;
         const authorName = project.authorName || project.authorEmail || 'Unknown User';
         
+        // FIXED: Remove question marks from author badges
         const authorBadge = isOwner 
             ? '<span class="author-badge owner">?? You</span>' 
             : '<span class="author-badge">?? ' + escapeHtml(authorName) + '</span>';

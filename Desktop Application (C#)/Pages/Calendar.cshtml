@@ -10,8 +10,8 @@
 <!-- Calendar Header -->
 <div class="calendar-header">
     <div class="calendar-header-content">
-        <h1 class="calendar-title"><i class="fas fa-calendar-alt"></i> Calendar</h1>
-        <p class="calendar-subtitle">Plan, schedule, and track your events and meetings</p>
+        <h1 class="calendar-title"><i class="fas fa-calendar-alt"></i> Company Calendar</h1>
+        <p class="calendar-subtitle">🌐 Viewing all team events - Collaborate and stay synchronized</p>
     </div>
 </div>
 
@@ -19,7 +19,7 @@
 <div class="calendar-stats">
     <div class="calendar-stat-card events">
         <div class="stat-number" id="total-events">0</div>
-        <div class="stat-label">Total Events</div>
+        <div class="stat-label">Company Events</div>
     </div>
     <div class="calendar-stat-card today">
         <div class="stat-number" id="today-events">0</div>
@@ -30,8 +30,8 @@
         <div class="stat-label">This Week</div>
     </div>
     <div class="calendar-stat-card overdue">
-        <div class="stat-number" id="overdue-events">0</div>
-        <div class="stat-label">Past Due</div>
+        <div class="stat-number" id="my-events">0</div>
+        <div class="stat-label">My Events</div>
     </div>
 </div>
 
@@ -59,8 +59,8 @@
 <div class="loading-calendar" id="loadingCalendar">
     <div class="text-center py-5">
         <i class="fas fa-spinner fa-spin fa-3x text-muted mb-3"></i>
-        <h5>Loading Calendar...</h5>
-        <p class="text-muted">Please wait while we load your events.</p>
+        <h5>Loading Company Calendar...</h5>
+        <p class="text-muted">Fetching all team events...</p>
     </div>
 </div>
 
@@ -78,7 +78,7 @@
             <i class="fas fa-calendar-plus"></i>
         </div>
         <h4>No Events Scheduled</h4>
-        <p>Get started by adding your first event to the calendar!</p>
+        <p>Be the first to add an event to the company calendar!</p>
         <button class="btn-modern-calendar btn-add-event" data-bs-toggle="modal" data-bs-target="#eventModal">
             <i class="fas fa-plus"></i> Add Your First Event
         </button>
@@ -175,13 +175,20 @@
             <div class="modal-header edit-header">
                 <h5 class="modal-title">
                     <i class="fas fa-edit"></i>
-                    Edit Event
+                    <span id="editModalTitle">Edit Event</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="editEventForm">
                     <input type="hidden" id="editEventId">
+                    
+                    <!-- Event Owner Info Badge -->
+                    <div id="eventOwnerBadge" style="display: none; margin-bottom: 1rem;">
+                        <div class="alert alert-info" style="margin-bottom: 1rem;">
+                            <i class="fas fa-user"></i> <strong>Created by:</strong> <span id="eventOwnerName"></span>
+                        </div>
+                    </div>
                     
                     <div class="form-floating">
                         <input type="text" id="editEventTitle" class="form-control" required />
@@ -238,10 +245,10 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times"></i> Cancel
                 </button>
-                <button type="button" class="btn-modern-calendar btn-delete-event" id="deleteFromEditBtn">
+                <button type="button" class="btn-modern-calendar btn-delete-event" id="deleteFromEditBtn" style="display: none;">
                     <i class="fas fa-trash"></i> Delete
                 </button>
-                <button type="button" class="btn-modern-calendar btn-edit-event" id="updateEventBtn">
+                <button type="button" class="btn-modern-calendar btn-edit-event" id="updateEventBtn" style="display: none;">
                     <i class="fas fa-save"></i> Save Changes
                 </button>
             </div>
@@ -252,7 +259,7 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
     <script>
-        console.log('📅 Calendar script starting...');
+        console.log('📅 Universal Calendar script starting...');
         
         var calendar = null;
         var selectedInfo = null;
@@ -272,7 +279,7 @@
         
         // Setup calendar-specific functionality
         function setupCalendar() {
-            console.log('📅 Setting up calendar');
+            console.log('📅 Setting up universal company calendar');
             
             if (!window.firebaseAuth || !window.firebaseDB) {
                 console.error('❌ Firebase not available in calendar');
@@ -294,21 +301,31 @@
             });
         }
         
-        // Load events from Firebase
+        // Load ALL events from Firebase (UNIVERSAL VIEW)
         async function loadEventsFromFirebase() {
             if (!db || !currentUser) return;
             
             showLoadingState(true);
             
             try {
-                console.log('📅 Loading events from Firebase...');
+                console.log('📅 Loading ALL company events from Firebase...');
                 
-                // Simple query without orderBy to avoid composite index requirement
-                const snapshot = await db.collection('events')
-                    .where('userId', '==', currentUser.uid)
-                    .get();
+                // Load ALL events without user filter for universal calendar
+                let eventsSnapshot;
+                try {
+                    console.log('📅 Attempting to load all company events...');
+                    eventsSnapshot = await db.collection('events').get();
+                    console.log('✅ Successfully loaded all company events');
+                } catch (permissionError) {
+                    console.log('📅 Company-wide access denied, loading user events only:', permissionError.message);
+                    // Fallback to user-specific events if permissions don't allow company-wide access
+                    eventsSnapshot = await db.collection('events')
+                        .where('userId', '==', currentUser.uid)
+                        .get();
+                    showNotification('ℹ️ Showing your events only. Contact admin for company-wide access.', 'info');
+                }
                 
-                events = snapshot.docs.map(doc => ({
+                events = eventsSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
@@ -321,13 +338,21 @@
                 });
                 
                 console.log('✅ Events loaded and sorted:', events.length);
+                console.log('📅 Event ownership breakdown:', events.map(e => ({
+                    title: e.title,
+                    author: e.authorName || e.authorEmail || 'Unknown',
+                    isMine: e.userId === currentUser.uid
+                })));
                 
                 if (events.length === 0) {
                     // Show empty calendar instead of empty state so users can still add events
                     initializeCalendar();
-                    showNotification('📅 Calendar ready! Click on any date to add your first event.', 'info');
+                    showNotification('📅 Company calendar is empty! Click on any date to add an event.', 'info');
                 } else {
                     initializeCalendar();
+                    const myEventsCount = events.filter(e => e.userId === currentUser.uid).length;
+                    const teamEventsCount = events.length - myEventsCount;
+                    showNotification(`📅 Loaded ${events.length} company events (${myEventsCount} yours, ${teamEventsCount} team)`, 'success');
                 }
                 
                 updateCalendarStats();
@@ -351,7 +376,7 @@
         
         // Initialize FullCalendar
         function initializeCalendar() {
-            console.log('📅 Initializing FullCalendar');
+            console.log('📅 Initializing FullCalendar with universal events');
             
             const calendarEl = document.getElementById('calendar');
             if (!calendarEl) {
@@ -374,20 +399,39 @@
                 editable: true,
                 dayMaxEvents: true,
                 height: 'auto',
-                events: events.map(event => ({
-                    id: event.id,
-                    title: event.title,
-                    start: event.start,
-                    end: event.end,
-                    allDay: event.allDay || false,
-                    backgroundColor: getCategoryColor(event.category),
-                    borderColor: getCategoryColor(event.category),
-                    extendedProps: {
-                        description: event.description,
-                        category: event.category,
-                        priority: event.priority
+                events: events.map(event => {
+                    const isMyEvent = event.userId === currentUser.uid;
+                    var atSymbol = String.fromCharCode(64);
+                    
+                    // Get author name with better fallback logic
+                    let authorName = 'Team Member';
+                    if (event.authorName) {
+                        authorName = event.authorName;
+                    } else if (event.authorEmail) {
+                        var emailParts = event.authorEmail.split(atSymbol);
+                        authorName = emailParts[0];
                     }
-                })),
+                    
+                    return {
+                        id: event.id,
+                        title: isMyEvent ? `${event.title}` : `${event.title} (${authorName})`,
+                        start: event.start,
+                        end: event.end,
+                        allDay: event.allDay || false,
+                        backgroundColor: getCategoryColor(event.category),
+                        borderColor: isMyEvent ? '#ff6b35' : getCategoryColor(event.category),
+                        borderWidth: isMyEvent ? 3 : 1,
+                        extendedProps: {
+                            description: event.description,
+                            category: event.category,
+                            priority: event.priority,
+                            userId: event.userId,
+                            authorName: authorName,
+                            authorEmail: event.authorEmail,
+                            isMyEvent: isMyEvent
+                        }
+                    };
+                }),
                 select: function (info) {
                     selectedInfo = info;
                     
@@ -413,6 +457,33 @@
                     const eventData = events.find(e => e.id === info.event.id);
                     
                     if (eventData) {
+                        const isMyEvent = eventData.userId === currentUser.uid;
+                        
+                        // Get author name with better fallback logic
+                        var atSymbol = String.fromCharCode(64);
+                        let authorName = 'Team Member';
+                        if (eventData.authorName) {
+                            authorName = eventData.authorName;
+                        } else if (eventData.authorEmail) {
+                            var emailParts = eventData.authorEmail.split(atSymbol);
+                            authorName = emailParts[0];
+                        }
+                        
+                        // Update modal title and show ownership
+                        const modalTitle = document.getElementById('editModalTitle');
+                        const ownerBadge = document.getElementById('eventOwnerBadge');
+                        const ownerName = document.getElementById('eventOwnerName');
+                        
+                        if (isMyEvent) {
+                            modalTitle.textContent = 'Edit Your Event';
+                            ownerBadge.style.display = 'none';
+                        } else {
+                            modalTitle.textContent = 'View Team Event';
+                            ownerBadge.style.display = 'block';
+                            ownerName.textContent = authorName;
+                        }
+                        
+                        // Populate form
                         document.getElementById('editEventId').value = eventData.id;
                         document.getElementById('editEventTitle').value = eventData.title;
                         document.getElementById('editEventDescription').value = eventData.description || '';
@@ -421,6 +492,36 @@
                         document.getElementById('editEventCategory').value = eventData.category || 'other';
                         document.getElementById('editEventPriority').value = eventData.priority || 'medium';
                         
+                        // Show/hide edit/delete buttons based on ownership
+                        const updateBtn = document.getElementById('updateEventBtn');
+                        const deleteBtn = document.getElementById('deleteFromEditBtn');
+                        
+                        if (isMyEvent) {
+                            // User owns this event - can edit and delete
+                            updateBtn.style.display = 'inline-block';
+                            deleteBtn.style.display = 'inline-block';
+                            
+                            // Enable form fields
+                            document.getElementById('editEventTitle').disabled = false;
+                            document.getElementById('editEventDescription').disabled = false;
+                            document.getElementById('editEventStart').disabled = false;
+                            document.getElementById('editEventEnd').disabled = false;
+                            document.getElementById('editEventCategory').disabled = false;
+                            document.getElementById('editEventPriority').disabled = false;
+                        } else {
+                            // Team event - view only
+                            updateBtn.style.display = 'none';
+                            deleteBtn.style.display = 'none';
+                            
+                            // Disable form fields (read-only)
+                            document.getElementById('editEventTitle').disabled = true;
+                            document.getElementById('editEventDescription').disabled = true;
+                            document.getElementById('editEventStart').disabled = true;
+                            document.getElementById('editEventEnd').disabled = true;
+                            document.getElementById('editEventCategory').disabled = true;
+                            document.getElementById('editEventPriority').disabled = true;
+                        }
+
                         const editModal = new bootstrap.Modal(document.getElementById('editModal'));
                         editModal.show();
                     }
@@ -428,15 +529,26 @@
                 eventDidMount: function(info) {
                     // Add priority indicator
                     const priority = info.event.extendedProps.priority;
+                    const isMyEvent = info.event.extendedProps.isMyEvent;
+                    const authorName = info.event.extendedProps.authorName || 'Team Member';
+                    
                     if (priority === 'high') {
                         info.el.style.border = '2px solid #ef4444';
+                    }
+                    
+                    // Add ownership indicator
+                    if (isMyEvent) {
+                        info.el.style.fontWeight = 'bold';
+                        info.el.title = '✓ Your Event - Click to edit';
+                    } else {
+                        info.el.title = `Team Event by ${authorName} - Click to view`;
                     }
                 }
             });
             
             calendar.render();
             setupEventHandlers();
-            console.log('✅ FullCalendar initialized');
+            console.log('✅ Universal FullCalendar initialized');
         }
         
         // Save event
@@ -463,6 +575,12 @@
                 return;
             }
             
+            // Get clean user name
+            const userName = currentUser.displayName || (currentUser.email ? currentUser.email.split(String.fromCharCode(64))[0] : 'User');
+            var atSymbol = String.fromCharCode(64);
+            var hasAtSymbol = userName.indexOf(atSymbol) > -1;
+            const cleanUserName = hasAtSymbol ? userName.split(atSymbol)[0] : userName;
+            
             const eventData = {
                 title: title,
                 description: description,
@@ -472,6 +590,8 @@
                 category: category,
                 priority: priority,
                 userId: currentUser.uid,
+                authorName: cleanUserName,
+                authorEmail: currentUser.email,
                 createdAt: new Date().toISOString(),
                 // Add timestamp for easier querying without composite index
                 startTimestamp: startDate.getTime(),
@@ -479,12 +599,12 @@
             };
             
             try {
-                console.log('📅 Saving event:', eventData);
+                console.log('📅 Saving event to company calendar:', eventData);
                 
                 const docRef = await db.collection('events').add(eventData);
-                console.log('✅ Event saved with ID:', docRef.id);
+                console.log('✅ Event saved to company calendar with ID:', docRef.id);
                 
-                showNotification('✅ Event added successfully!', 'success');
+                showNotification('✅ Event added to company calendar!', 'success');
                 
                 // Clear form
                 document.getElementById('eventForm').reset();
@@ -496,13 +616,25 @@
                 // Reload events
                 await loadEventsFromFirebase();
                 
+                // Dispatch event for dashboard sync
+                const eventSavedEvent = new CustomEvent('calendarEventSaved', {
+                    detail: {
+                        eventId: docRef.id,
+                        eventData: eventData,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+                window.dispatchEvent(eventSavedEvent);
+                
+                console.log('📡 Calendar event saved event dispatched for dashboard sync');
+                
             } catch (error) {
                 console.error('❌ Error saving event:', error);
                 showNotification('❌ Error saving event: ' + error.message, 'error');
             }
         }
         
-        // Update event
+        // Update event (only for owned events)
         async function updateEvent() {
             const eventId = document.getElementById('editEventId').value;
             const title = document.getElementById('editEventTitle').value.trim();
@@ -514,6 +646,13 @@
             
             if (!title || !startTime || !eventId) {
                 showNotification('⚠️ Please fill in the required fields', 'warning');
+                return;
+            }
+            
+            // Verify ownership
+            const event = events.find(e => e.id === eventId);
+            if (!event || event.userId !== currentUser.uid) {
+                showNotification('❌ You can only edit your own events', 'error');
                 return;
             }
             
@@ -531,7 +670,7 @@
                 await db.collection('events').doc(eventId).update(eventData);
                 console.log('✅ Event updated:', eventId);
                 
-                showNotification('✅ Event updated successfully!', 'success');
+                showNotification('✅ Your event updated successfully!', 'success');
                 
                 // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
@@ -540,17 +679,36 @@
                 // Reload events
                 await loadEventsFromFirebase();
                 
+                // Dispatch event for dashboard sync
+                const eventUpdatedEvent = new CustomEvent('calendarEventUpdated', {
+                    detail: {
+                        eventId: eventId,
+                        eventData: eventData,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+                window.dispatchEvent(eventUpdatedEvent);
+                
+                console.log('📡 Calendar event updated event dispatched for dashboard sync');
+                
             } catch (error) {
                 console.error('Error updating event:', error);
                 showNotification('❌ Error updating event', 'error');
             }
         }
         
-        // Delete event
+        // Delete event (only for owned events)
         async function deleteEvent() {
             const eventId = document.getElementById('editEventId').value;
             
             if (!eventId) return;
+            
+            // Verify ownership
+            const event = events.find(e => e.id === eventId);
+            if (!event || event.userId !== currentUser.uid) {
+                showNotification('❌ You can only delete your own events', 'error');
+                return;
+            }
             
             if (!confirm('Are you sure you want to delete this event?')) {
                 return;
@@ -560,7 +718,7 @@
                 await db.collection('events').doc(eventId).delete();
                 console.log('✅ Event deleted:', eventId);
                 
-                showNotification('✅ Event deletedSuccessfully!', 'success');
+                showNotification('✅ Your event deleted successfully!', 'success');
                 
                 // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
@@ -568,6 +726,17 @@
                 
                 // Reload events
                 await loadEventsFromFirebase();
+                
+                // Dispatch event for dashboard sync
+                const eventDeletedEvent = new CustomEvent('calendarEventDeleted', {
+                    detail: {
+                        eventId: eventId,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+                window.dispatchEvent(eventDeletedEvent);
+                
+                console.log('📡 Calendar event deleted event dispatched for dashboard sync');
                 
             } catch (error) {
                 console.error('Error deleting event:', error);
@@ -638,7 +807,7 @@
             
             let todayEvents = 0;
             let upcomingEvents = 0;
-            let overdueEvents = 0;
+            let myEvents = 0;
             
             const nextWeek = new Date(today);
             nextWeek.setDate(nextWeek.getDate() + 7);
@@ -657,16 +826,16 @@
                     upcomingEvents++;
                 }
                 
-                // Overdue events
-                if (eventDate < today) {
-                    overdueEvents++;
+                // My events
+                if (event.userId === currentUser.uid) {
+                    myEvents++;
                 }
             });
             
             document.getElementById('total-events').textContent = events.length;
             document.getElementById('today-events').textContent = todayEvents;
             document.getElementById('upcoming-events').textContent = upcomingEvents;
-            document.getElementById('overdue-events').textContent = overdueEvents;
+            document.getElementById('my-events').textContent = myEvents;
         }
         
         // Quick action functions
@@ -698,9 +867,8 @@
         
         // Refresh calendar
         async function refreshCalendar() {
-            showNotification('🔄 Refreshing calendar...', 'info');
+            showNotification('🔄 Refreshing company calendar...', 'info');
             await loadEventsFromFirebase();
-            showNotification('✅ Calendar refreshed!', 'success');
         }
         
         // UI state functions
@@ -769,11 +937,11 @@
         
         // Initialize everything when Firebase is ready
         waitForCalendarFirebase(function() {
-            console.log('✅ Firebase ready for calendar');
+            console.log('✅ Firebase ready for universal calendar');
             setupCalendar();
-            console.log('✅ Calendar setup complete');
+            console.log('✅ Universal calendar setup complete');
         });
         
-        console.log('📅 Calendar script loaded');
+        console.log('📅 Universal Calendar script loaded');
     </script>
-}
+}}
