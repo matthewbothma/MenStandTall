@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/dashboardFragment">
+
+    <!-- Dashboard -->
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.example.mensstandtall.ui.dashboard.DashboardFragment"
+        android:label="Dashboard">
+
+        <action
+            android:id="@+id/action_dashboardFragment_to_projectsFragment"
+            app:destination="@id/projectsFragment" />
+
+        <action
+            android:id="@+id/action_dashboardFragment_to_tasksFragment"
+            app:destination="@id/tasksFragment" />
+    </fragment>
+
+    <!-- Projects -->
+    <fragment
+        android:id="@+id/projectsFragment"
+        android:name="com.example.mensstandtall.ui.projects.ProjectsFragment"
+        android:label="Projects">
+
+        <action
+            android:id="@+id/action_projectsFragment_to_newProjectFragment"
+            app:destination="@id/newProjectFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/newProjectFragment"
+        android:name="com.example.mensstandtall.ui.projects.NewProjectFragment"
+        android:label="New Project" />
+
+    <!-- Tasks -->
+    <fragment
+        android:id="@+id/tasksFragment"
+        android:name="com.example.mensstandtall.ui.tasks.TasksFragment"
+        android:label="Tasks">
+
+        <action
+            android:id="@+id/action_tasksFragment_to_newTaskFragment"
+            app:destination="@id/newTaskFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/newTaskFragment"
+        android:name="com.example.mensstandtall.ui.tasks.NewTaskFragment"
+        android:label="New Task" />
+
+    <!-- Calendar -->
+    <fragment
+        android:id="@+id/calendarFragment"
+        android:name="com.example.mensstandtall.ui.calendar.CalendarFragment"
+        android:label="Calendar" />
+
+    <!-- Messages -->
+    <fragment
+        android:id="@+id/messagesFragment"
+        android:name="com.example.mensstandtall.ui.messages.MessagesFragment"
+        android:label="Messages" />
+
+</navigation>
+
+
+
