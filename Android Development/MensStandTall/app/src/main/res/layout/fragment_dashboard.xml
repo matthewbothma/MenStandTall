@@ -289,6 +289,7 @@
                     android:weightSum="2">
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnNewProject"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
@@ -299,6 +300,7 @@
                         app:iconGravity="textStart" />
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAddTask"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"

@@ -8,6 +8,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import com.example.mensstandtall.R
+import androidx.navigation.fragment.findNavController
 import com.example.mensstandtall.databinding.FragmentDashboardBinding
 import com.example.mensstandtall.repository.AuthRepository
 import com.github.mikephil.charting.data.PieData
@@ -28,6 +30,15 @@ class DashboardFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
+
+        binding.btnNewProject.setOnClickListener {
+            findNavController().navigate(R.id.action_dashboardFragment_to_newProjectFragment)
+        }
+
+        binding.btnAddTask.setOnClickListener {
+            findNavController().navigate(R.id.action_dashboardFragment_to_newTaskFragment)
+        }
+
         return binding.root
     }
 

@@ -4,20 +4,24 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/dashboardFragment">
 
-    <!-- Dashboard -->
     <fragment
         android:id="@+id/dashboardFragment"
         android:name="com.example.mensstandtall.ui.dashboard.DashboardFragment"
         android:label="Dashboard">
 
         <action
-            android:id="@+id/action_dashboardFragment_to_projectsFragment"
-            app:destination="@id/projectsFragment" />
+            android:id="@+id/action_dashboardFragment_to_newProjectFragment"
+            app:destination="@id/newProjectFragment" />
 
         <action
-            android:id="@+id/action_dashboardFragment_to_tasksFragment"
-            app:destination="@id/tasksFragment" />
+            android:id="@+id/action_dashboardFragment_to_newTaskFragment"
+            app:destination="@id/newTaskFragment" />
+
+        <action
+            android:id="@+id/action_dashboardFragment_to_messagesFragment"
+            app:destination="@id/messagesFragment" />
     </fragment>
+
 
     <!-- Projects -->
     <fragment
@@ -51,19 +55,29 @@
         android:name="com.example.mensstandtall.ui.tasks.NewTaskFragment"
         android:label="New Task" />
 
-    <!-- Calendar -->
     <fragment
         android:id="@+id/calendarFragment"
         android:name="com.example.mensstandtall.ui.calendar.CalendarFragment"
         android:label="Calendar" />
 
-    <!-- Messages -->
     <fragment
         android:id="@+id/messagesFragment"
         android:name="com.example.mensstandtall.ui.messages.MessagesFragment"
-        android:label="Messages" />
+        android:label="Messages">
+
+        <action
+            android:id="@+id/action_messagesFragment_to_newMessageFragment"
+            app:destination="@id/newMessageFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/newMessageFragment"
+        android:name="com.example.mensstandtall.ui.messages.NewMessageFragment"
+        android:label="New Message" />
 
 </navigation>
+
+
 
 
 
