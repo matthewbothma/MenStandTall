@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/dashboardFragment"
+        android:icon="@drawable/ic_dashboard"
+        android:title="Dashboard" />
+
+    <item
+        android:id="@+id/projectsFragment"
+        android:icon="@drawable/ic_projects"
+        android:title="Projects" />
+
+    <item
+        android:id="@+id/tasksFragment"
+        android:icon="@drawable/ic_tasks"
+        android:title="Tasks" />
+
+    <item
+        android:id="@+id/calendarFragment"
+        android:icon="@drawable/ic_calendar"
+        android:title="Calendar" />
+
+    <item
+        android:id="@+id/messagesFragment"
+        android:icon="@drawable/ic_message"
+        android:title="Messages" />
+</menu>
+
+

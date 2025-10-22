@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Men Stand Tall</string>
+    <string name="default_web_client_id">610463601364-e6at4m81tg4fr526jhuoc55ufag3729j.apps.googleusercontent.com</string>
+    <string name="task_title">Task Title</string>
+    <string name="description">Description</string>
+    <string name="project_name">Project Name</string>
+    <string name="due_date">Due Date</string>
+    <string name="create_task">Create Task</string>
+    <string name="task_board">Task Board</string>
+    <string name="add_task">Add Task</string>
+    <string name="task_count_initial">0</string>
+    <string name="to_do">To Do</string>
+    <string name="in_progress">In Progress</string>
+    <string name="completed">Completed</string>
+    <string name="total_tasks">Total Tasks</string>
+    <string name="add_new_task">Add New Task</string>
+    <string name="task_name">Task Name</string>
+    <string name="assign_to_project">Assign to Project</string>
+    <string name="no_project">No Project (Standalone Task)</string>
+    <string name="date_format">mm/dd/yyyy</string>
+    <string name="priority">Priority</string>
+    <string name="low_priority">Low Priority</string>
+    <string name="cancel">Cancel</string>
+    <string name="company_projects">Company Projects</string>
+    <string name="collaborate_track_projects">Collaborate and track projects across your entire team</string>
+    <string name="add_new_project">Add New Project</string>
+    <string name="refresh">Refresh</string>
+    <string name="total_projects">Total Projects</string>
+    <string name="active">Active</string>
+    <string name="overdue">Overdue</string>
+    <string name="search_projects">Search projects by name or description…</string>
+    <string name="all_projects">All Projects</string>
+    <string name="all_priorities">All Priorities</string>
+    <string name="clear">Clear</string>
+</resources>

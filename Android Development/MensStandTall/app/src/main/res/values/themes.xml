@@ -1,0 +1,58 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.MensStandTall" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:textColor">@color/textColorPrimary</item>
+    </style>
+
+    <style name="Theme.MensStandTall" parent="Base.Theme.MensStandTall" />
+
+    <!-- Text Styles -->
+    <style name="TitleText" parent="Widget.AppCompat.TextView">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/textColorPrimary</item>
+    </style>
+
+    <style name="SubtitleText" parent="Widget.AppCompat.TextView">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/textColorSecondary</item>
+    </style>
+
+    <style name="StatisticValueText" parent="Widget.AppCompat.TextView">
+        <item name="android:textSize">36sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/orange_500</item>
+    </style>
+
+    <style name="StatisticTitleText" parent="Widget.AppCompat.TextView">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/gray_400</item>
+    </style>
+
+    <style name="KanbanColumnTitle" parent="Widget.AppCompat.TextView">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/gray_700</item>
+    </style>
+
+    <!-- Button Styles -->
+    <style name="AddTaskButton" parent="Widget.AppCompat.Button.Borderless">
+        <item name="android:background">@drawable/button_add_task_bg</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+    </style>
+
+    <style name="ViewAllButton" parent="Widget.AppCompat.Button.Borderless">
+        <item name="android:background">@color/gray_700</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+    </style>
+
+</resources>
