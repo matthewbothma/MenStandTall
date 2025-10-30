@@ -17,7 +17,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private val authRepository = AuthRepository()
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) { // hello
         super.onCreate(savedInstanceState)
 
         // Check if user is logged in
