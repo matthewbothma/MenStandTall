@@ -4,126 +4,1025 @@
     ViewData["Title"] = "Task Board";
 }
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
-    <title>@ViewData["Title"]</title>
-    <style>
-        body {
-            background-color: #f4f7fa;
-        }
+<link rel="stylesheet" href="~/css/tasks.css" asp-append-version="true" />
 
-        .task-column {
-            min-height: 300px;
-            border: 1px dashed #ccc;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            background-color: #fff;
-        }
-
-        .draggable {
-            padding: 10px;
-            margin: 5px 0;
-            background-color: #e9ecef;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            cursor: move;
-        }
-    </style>
-</head>
-<body>
-    <div class="container mt-4">
-        <h1>@ViewData["Title"]</h1>
-        <div class="row">
-            <div class="col">
-                <h6>To Do</h6>
-                <div class="task-column" id="todo" ondrop="drop(event, 'To Do')" ondragover="allowDrop(event)"></div>
-            </div>
-            <div class="col">
-                <h6>Doing</h6>
-                <div class="task-column" id="doing" ondrop="drop(event, 'Doing')" ondragover="allowDrop(event)"></div>
-            </div>
-            <div class="col">
-                <h6>Done</h6>
-                <div class="task-column" id="done" ondrop="drop(event, 'Done')" ondragover="allowDrop(event)"></div>
-            </div>
+<!-- Tasks Header -->
+<div class="tasks-header">
+    <div class="tasks-header-content">
+        <div class="tasks-title-section">
+            <h1 class="tasks-title"><i class="fas fa-tasks"></i> Task Board</h1>
+            <p class="tasks-subtitle">Organize and track your tasks with our modern Kanban board</p>
         </div>
-        <div class="mt-4">
-            <input type="text" id="newTaskInput" class="form-control" placeholder="Add new task..." />
-            <button class="btn btn-primary mt-2" onclick="addTask()">Add Task</button>
+        <div class="tasks-actions">
+            <button class="btn-modern-task btn-add-task" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+                <i class="fas fa-plus"></i>
+                <span>Add Task</span>
+            </button>
+            <button class="btn-modern-task btn-view-all" data-bs-toggle="modal" data-bs-target="#viewAllTasksModal" onclick="renderAllTasksModal()">
+                <i class="fas fa-list"></i>
+                <span>View All</span>
+            </button>
         </div>
     </div>
+</div>
 
+<!-- User Info Card (Hidden by default) -->
+<div id="user-info" class="user-info-card" style="display: none;">
+    <div class="d-flex align-items-center">
+        <div class="user-avatar" id="task-user-avatar">U</div>
+        <div>
+            <div class="fw-bold" id="task-user-name">Loading...</div>
+            <small class="opacity-75">Task Management Dashboard</small>
+        </div>
+    </div>
+</div>
+
+<!-- Task Statistics -->
+<div class="task-stats">
+    <div class="stat-card-task">
+        <div class="stat-number" id="todo-count">0</div>
+        <div class="stat-label">To Do</div>
+    </div>
+    <div class="stat-card-task">
+        <div class="stat-number" id="doing-count">0</div>
+        <div class="stat-label">In Progress</div>
+    </div>
+    <div class="stat-card-task">
+        <div class="stat-number" id="done-count">0</div>
+        <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card-task">
+        <div class="stat-number" id="total-count">0</div>
+        <div class="stat-label">Total Tasks</div>
+    </div>
+</div>
+
+<!-- Kanban Board -->
+<div class="kanban-board">
+    <!-- To Do Column -->
+    <div class="kanban-column todo-column">
+        <div class="column-header">
+            <div class="column-title">
+                <i class="fas fa-clipboard-list"></i>
+                To Do
+            </div>
+            <div class="column-count" id="todo-column-count">0</div>
+        </div>
+        <div class="task-column" id="todo" ondrop="drop(event, 'To Do')" ondragover="allowDrop(event)">
+            <div class="empty-column">
+                <i class="fas fa-clipboard-list"></i>
+                <h4>No tasks yet</h4>
+                <p>Add your first task to get started</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Doing Column -->
+    <div class="kanban-column doing-column">
+        <div class="column-header">
+            <div class="column-title">
+                <i class="fas fa-play-circle"></i>
+                In Progress
+            </div>
+            <div class="column-count" id="doing-column-count">0</div>
+        </div>
+        <div class="task-column" id="doing" ondrop="drop(event, 'Doing')" ondragover="allowDrop(event)">
+            <div class="empty-column">
+                <i class="fas fa-play-circle"></i>
+                <h4>Ready to work</h4>
+                <p>Move tasks here when you start working</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Done Column -->
+    <div class="kanban-column done-column">
+        <div class="column-header">
+            <div class="column-title">
+                <i class="fas fa-check-circle"></i>
+                Completed
+            </div>
+            <div class="column-count" id="done-column-count">0</div>
+        </div>
+        <div class="task-column" id="done" ondrop="drop(event, 'Done')" ondragover="allowDrop(event)">
+            <div class="empty-column">
+                <i class="fas fa-check-circle"></i>
+                <h4>Great job!</h4>
+                <p>Completed tasks will appear here</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal fade modal-modern" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTaskModalLabel">
+                    <i class="fas fa-plus-circle"></i>
+                    Add New Task
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-floating">
+                    <input type="text" id="newTaskInput" class="form-control" placeholder="Task name..." required />
+                    <label for="newTaskInput">Task Name</label>
+                </div>
+                
+                <div class="form-floating">
+                    <textarea id="newTaskDesc" class="form-control" placeholder="Description..." style="height: 100px"></textarea>
+                    <label for="newTaskDesc">Description</label>
+                </div>
+                
+                <div class="form-floating">
+                    <select id="newTaskProject" class="form-control">
+                        <option value="">No Project (Standalone Task)</option>
+                        <!-- Projects will be loaded dynamically -->
+                    </select>
+                    <label for="newTaskProject">Assign to Project</label>
+                </div>
+                
+                <div class="form-floating">
+                    <input type="date" id="newTaskDue" class="form-control" onchange="updateDueCountdown()" />
+                    <label for="newTaskDue">Due Date</label>
+                </div>
+                
+                <small id="dueCountdown" class="form-text text-muted mb-3"></small>
+                
+                <div class="form-floating">
+                    <select id="newTaskPriority" class="form-control">
+                        <option value="Low">Low Priority</option>
+                        <option value="Medium">Medium Priority</option>
+                        <option value="High">High Priority</option>
+                    </select>
+                    <label for="newTaskPriority">Priority</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-modern-task btn-add-task" onclick="addTaskAndClose()">
+                    <i class="fas fa-save"></i> Add Task
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View All Tasks Modal -->
+<div class="modal fade modal-modern" id="viewAllTasksModal" tabindex="-1" aria-labelledby="viewAllTasksModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewAllTasksModalLabel">
+                    <i class="fas fa-list"></i>
+                    All Tasks
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="d-flex justify-content-end align-items-center p-3 border-bottom">
+                <label for="taskFilter" class="me-2 mb-0 fw-bold">Filter:</label>
+                <select id="taskFilter" class="form-select w-auto" onchange="renderAllTasksModal()">
+                    <option value="all">All Tasks</option>
+                    <option value="deleted">Deleted</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            <div class="modal-body" id="allTasksModalBody">
+                <div class="text-center py-4">
+                    <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                    <h5>No tasks found</h5>
+                    <p class="text-muted">Tasks matching your filter will appear here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
     <script>
-        let tasks = [];
-
-        function allowDrop(ev) {
-            ev.preventDefault();
+        console.log('📝 Tasks script starting...');
+        
+        var tasksCurrentUser = null;
+        var tasksDB = null;
+        var tasks = [];
+        var projects = [];
+        
+        // Wait for global Firebase to be ready
+        function waitForTasksFirebase(callback) {
+            if (window.firebaseAuth && window.firebaseDB) {
+                callback();
+            } else {
+                setTimeout(function() { waitForTasksFirebase(callback); }, 100);
+            }
+        }
+        
+        // Setup tasks-specific functionality
+        function setupTasks() {
+            console.log('📝 Setting up tasks');
+            
+            if (!window.firebaseAuth || !window.firebaseDB) {
+                console.error('❌ Firebase not available in tasks');
+                return;
+            }
+            
+            tasksDB = window.firebaseDB;
+            
+            // Authentication check for tasks
+            window.firebaseAuth.onAuthStateChanged(function(user) {
+                if (!user) {
+                    console.log('❌ No user in tasks, redirecting');
+                    window.location.href = '/';
+                } else {
+                    tasksCurrentUser = user;
+                    console.log('✅ Tasks user authenticated:', user.email);
+                    
+                    updateUserDisplay(user);
+                    loadTasksFromFirestore();
+                    loadProjectsForTasks();
+                }
+            });
+        }
+        
+        // Update user display
+        function updateUserDisplay(user) {
+            if (user) {
+                const displayName = user.displayName || user.email || 'User';
+                const emailSymbol = String.fromCharCode(64);
+                const atIndex = displayName.indexOf(emailSymbol);
+                const name = atIndex > -1 ? displayName.substring(0, atIndex) : displayName;
+                
+                // Update user name
+                const userNameEl = document.getElementById('task-user-name');
+                if (userNameEl) {
+                    userNameEl.textContent = name;
+                }
+                
+                // Update avatar initials
+                const avatarEl = document.getElementById('task-user-avatar');
+                if (avatarEl) {
+                    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                    avatarEl.textContent = initials;
+                }
+            }
+        }
+        
+        // Load tasks from Firestore
+        async function loadTasksFromFirestore() {
+            if (!tasksDB || !tasksCurrentUser) return;
+            
+            try {
+                console.log('📝 Loading tasks from Firestore...');
+                
+                const tasksSnapshot = await tasksDB.collection('tasks')
+                    .where('uid', '==', tasksCurrentUser.uid)
+                    .get();
+                
+                tasks = tasksSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                console.log('✅ Tasks loaded:', tasks.length);
+                console.log('📊 Task statuses:', tasks.map(t => ({ name: t.name, status: t.status })));
+                
+                renderTasksUI();
+                updateTaskCounts();
+                
+            } catch (error) {
+                console.error('❌ Error loading tasks:', error);
+                showTaskNotification('❌ Error loading tasks', 'error');
+            }
+        }
+        
+        // Load projects for task assignment
+        async function loadProjectsForTasks() {
+            if (!tasksDB || !tasksCurrentUser) return;
+            
+            try {
+                console.log('📋 Loading projects for task assignment...');
+                
+                let projectsSnapshot;
+                try {
+                    // Try to load all projects first (for company view)
+                    projectsSnapshot = await tasksDB.collection('projects').get();
+                    console.log('📋 Loaded all company projects');
+                } catch (permissionError) {
+                    console.log('📋 Company-wide access denied, loading user projects only');
+                    // Fallback to user-specific projects
+                    projectsSnapshot = await tasksDB.collection('projects')
+                        .where('userId', '==', tasksCurrentUser.uid)
+                        .get();
+                    console.log('📋 Loaded user projects only');
+                }
+                
+                projects = projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(project => {
+                        // Only show active projects (not completed)
+                        const status = project.status?.toLowerCase();
+                        return status !== 'completed' && status !== 'complete' && status !== 'done';
+                    });
+                
+                console.log('📋 Active projects found:', projects.length);
+                console.log('📋 Projects:', projects.map(p => ({ name: p.name, status: p.status })));
+                
+                // Populate project dropdown
+                const projectSelect = document.getElementById('newTaskProject');
+                if (projectSelect) {
+                    // Clear existing options except the first one
+                    while (projectSelect.children.length > 1) {
+                        projectSelect.removeChild(projectSelect.lastChild);
+                    }
+                    
+                    if (projects.length > 0) {
+                        // Add projects
+                        projects.forEach(project => {
+                            const option = document.createElement('option');
+                            option.value = project.id;
+                            option.textContent = `${project.name} (${project.status || 'Active'})`;
+                            projectSelect.appendChild(option);
+                        });
+                        
+                        console.log(`✅ Loaded ${projects.length} projects for task assignment`);
+                        showTaskNotification(`📋 ${projects.length} projects available for task assignment`, 'info');
+                    } else {
+                        console.log('ℹ️ No active projects available for task assignment');
+                        showTaskNotification('ℹ️ No active projects found. Create a project first to assign tasks.', 'warning');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading projects for tasks:', error);
+                showTaskNotification('❌ Error loading projects', 'error');
+            }
+        }
+        
+        // Render tasks UI
+        function renderTasksUI() {
+            console.log('🎨 Rendering tasks UI...');
+            
+            // Clear all columns
+            const todoColumn = document.getElementById('todo');
+            const doingColumn = document.getElementById('doing');
+            const doneColumn = document.getElementById('done');
+            
+            if (todoColumn) todoColumn.innerHTML = '';
+            if (doingColumn) doingColumn.innerHTML = '';
+            if (doneColumn) doneColumn.innerHTML = '';
+            
+            // Group tasks by status
+            const todoTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'to do' || status === 'todo' || status === 'pending' || !status;
+            });
+            
+            const doingTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'doing' || status === 'in progress' || status === 'inprogress';
+            });
+            
+            const doneTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'done' || status === 'completed' || status === 'complete';
+            });
+            
+            console.log('📊 Task distribution:', {
+                todo: todoTasks.length,
+                doing: doingTasks.length,
+                done: doneTasks.length
+            });
+            
+            // Render tasks in each column
+            renderTasksInColumn(todoTasks, 'todo');
+            renderTasksInColumn(doingTasks, 'doing');
+            renderTasksInColumn(doneTasks, 'done');
+            
+            // Show empty states if needed
+            if (todoTasks.length === 0) showEmptyState('todo');
+            if (doingTasks.length === 0) showEmptyState('doing');
+            if (doneTasks.length === 0) showEmptyState('done');
+        }
+        
+        // Render tasks in a specific column
+        function renderTasksInColumn(taskList, columnId) {
+            const column = document.getElementById(columnId);
+            if (!column) return;
+            
+            taskList.forEach(task => {
+                const taskCard = createTaskCard(task);
+                column.appendChild(taskCard);
+            });
+        }
+        
+        // Create task card element
+        function createTaskCard(task) {
+            const taskDiv = document.createElement('div');
+            taskDiv.className = `task-card ${task.status?.toLowerCase().replace(' ', '-')}-task`;
+            taskDiv.draggable = true;
+            taskDiv.setAttribute('data-task-id', task.id);
+            
+            taskDiv.ondragstart = function(event) {
+                event.dataTransfer.setData('text/plain', task.id);
+                taskDiv.classList.add('dragging');
+            };
+            
+            taskDiv.ondragend = function(event) {
+                taskDiv.classList.remove('dragging');
+            };
+            
+            // Task header with name and priority
+            const header = document.createElement('div');
+            header.className = 'task-header';
+            
+            const name = document.createElement('h4');
+            name.className = 'task-name';
+            name.textContent = task.name;
+            
+            const priority = document.createElement('span');
+            priority.className = `task-priority ${task.priority?.toLowerCase() || 'medium'}`;
+            priority.textContent = task.priority || 'Medium';
+            
+            header.appendChild(name);
+            header.appendChild(priority);
+            taskDiv.appendChild(header);
+            
+            // Task description
+            if (task.description) {
+                const desc = document.createElement('div');
+                desc.className = 'task-description';
+                desc.textContent = task.description;
+                taskDiv.appendChild(desc);
+            }
+            
+            // Project info
+            if (task.projectId && task.projectName) {
+                const projectInfo = document.createElement('div');
+                projectInfo.className = 'task-project';
+                projectInfo.innerHTML = `<i class="fas fa-project-diagram"></i> ${task.projectName}`;
+                taskDiv.appendChild(projectInfo);
+            }
+            
+            // Task meta info
+            const meta = document.createElement('div');
+            meta.className = 'task-meta';
+            
+            // Due date
+            if (task.dueDate) {
+                const dueDate = new Date(task.dueDate);
+                const now = new Date();
+                const isOverdue = dueDate < now && task.status?.toLowerCase() !== 'done';
+                const isDueSoon = (dueDate - now) / (1000 * 60 * 60 * 24) <= 3 && !isOverdue;
+                
+                const due = document.createElement('div');
+                due.className = 'task-due';
+                if (isOverdue) due.classList.add('overdue');
+                if (isDueSoon) due.classList.add('due-soon');
+                
+                due.innerHTML = `<i class="fas fa-calendar"></i> ${dueDate.toLocaleDateString()}`;
+                meta.appendChild(due);
+            }
+            
+            // Created date
+            if (task.createdAt) {
+                const created = document.createElement('div');
+                created.className = 'task-created';
+                const createdDate = new Date(task.createdAt);
+                created.innerHTML = `<i class="fas fa-clock"></i> ${createdDate.toLocaleDateString()}`;
+                meta.appendChild(created);
+            }
+            
+            taskDiv.appendChild(meta);
+            
+            // Task actions
+            const actions = document.createElement('div');
+            actions.className = 'task-actions';
+            
+            // Status change buttons
+            if (task.status?.toLowerCase() === 'to do' || !task.status) {
+                const startBtn = document.createElement('button');
+                startBtn.className = 'task-btn start';
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Start';
+                startBtn.onclick = () => moveTaskToDoing(task.id);
+                actions.appendChild(startBtn);
+            }
+            
+            if (task.status?.toLowerCase() === 'doing' || task.status?.toLowerCase() === 'in progress') {
+                const completeBtn = document.createElement('button');
+                completeBtn.className = 'task-btn complete';
+                completeBtn.innerHTML = '<i class="fas fa-check"></i> Complete';
+                completeBtn.onclick = () => moveTaskToDone(task.id);
+                actions.appendChild(completeBtn);
+            }
+            
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'task-btn delete';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteBtn.onclick = () => deleteTask(task.id, task.name);
+            actions.appendChild(deleteBtn);
+            
+            taskDiv.appendChild(actions);
+            
+            return taskDiv;
+        }
+        
+        // Show empty state for column
+        function showEmptyState(columnId) {
+            const column = document.getElementById(columnId);
+            if (!column) return;
+            
+            const emptyStates = {
+                todo: {
+                    icon: 'fas fa-clipboard-list',
+                    title: 'No tasks yet',
+                    text: 'Add your first task to get started'
+                },
+                doing: {
+                    icon: 'fas fa-play-circle',
+                    title: 'Ready to work',
+                    text: 'Move tasks here when you start working'
+                },
+                done: {
+                    icon: 'fas fa-check-circle',
+                    title: 'Great job!',
+                    text: 'Completed tasks will appear here'
+                }
+            };
+            
+            const state = emptyStates[columnId];
+            if (!state) return;
+            
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'empty-column';
+            emptyDiv.innerHTML = `
+                <i class="${state.icon}"></i>
+                <h4>${state.title}</h4>
+                <p>${state.text}</p>
+            `;
+            
+            column.appendChild(emptyDiv);
+        }
+        
+        // Update task counts
+        function updateTaskCounts() {
+            const todoTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'to do' || status === 'todo' || status === 'pending' || !status;
+            });
+            
+            const doingTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'doing' || status === 'in progress' || status === 'inprogress';
+            });
+            
+            const doneTasks = tasks.filter(t => {
+                const status = t.status?.toLowerCase();
+                return status === 'done' || status === 'completed' || status === 'complete';
+            });
+            
+            // Update statistics
+            const todoCountEl = document.getElementById('todo-count');
+            const doingCountEl = document.getElementById('doing-count');
+            const doneCountEl = document.getElementById('done-count');
+            const totalCountEl = document.getElementById('total-count');
+            
+            if (todoCountEl) todoCountEl.textContent = todoTasks.length;
+            if (doingCountEl) doingCountEl.textContent = doingTasks.length;
+            if (doneCountEl) doneCountEl.textContent = doneTasks.length;
+            if (totalCountEl) totalCountEl.textContent = tasks.length;
+            
+            // Update column counts
+            const todoColumnCountEl = document.getElementById('todo-column-count');
+            const doingColumnCountEl = document.getElementById('doing-column-count');
+            const doneColumnCountEl = document.getElementById('done-column-count');
+            
+            if (todoColumnCountEl) todoColumnCountEl.textContent = todoTasks.length;
+            if (doingColumnCountEl) doingColumnCountEl.textContent = doingTasks.length;
+            if (doneColumnCountEl) doneColumnCountEl.textContent = doneTasks.length;
+            
+            console.log('📊 Task counts updated:', {
+                todo: todoTasks.length,
+                doing: doingTasks.length,
+                done: doneTasks.length,
+                total: tasks.length
+            });
+        }
+        
+        // Add task
+        function addTask() {
+            const taskInput = document.getElementById('newTaskInput');
+            const descInput = document.getElementById('newTaskDesc');
+            const projectInput = document.getElementById('newTaskProject');
+            const dueInput = document.getElementById('newTaskDue');
+            const priorityInput = document.getElementById('newTaskPriority');
+            
+            if (!taskInput || !descInput || !projectInput || !dueInput || !priorityInput) {
+                console.error('❌ Task form elements not found');
+                return;
+            }
+            
+            const taskName = taskInput.value.trim();
+            const description = descInput.value.trim();
+            const projectId = projectInput.value;
+            const projectName = projectInput.selectedOptions[0]?.text.split(' (')[0] || '';
+            const dueDate = dueInput.value;
+            const priority = priorityInput.value;
+            
+            if (!taskName) {
+                showTaskNotification('⚠️ Please enter a task name', 'warning');
+                return;
+            }
+            
+            if (taskName && tasksCurrentUser) {
+                const newTask = {
+                    name: taskName,
+                    description: description,
+                    projectId: projectId || null,
+                    projectName: projectId ? projectName : null,
+                    dueDate: dueDate,
+                    priority: priority,
+                    status: 'To Do',
+                    uid: tasksCurrentUser.uid,
+                    createdAt: new Date().toISOString()
+                };
+                
+                saveTaskToFirestore(newTask);
+                
+                // Clear form
+                taskInput.value = '';
+                descInput.value = '';
+                projectInput.value = '';
+                dueInput.value = '';
+                priorityInput.value = 'Medium';
+                
+                const countdown = document.getElementById('dueCountdown');
+                if (countdown) countdown.textContent = '';
+            }
+        }
+        
+        // Add task and close modal
+        function addTaskAndClose() {
+            addTask();
+        }
+        
+        // Save task to Firestore
+        async function saveTaskToFirestore(task) {
+            if (!tasksDB) return;
+            
+            try {
+                console.log('💾 Saving task to Firestore:', task);
+                
+                const docRef = await tasksDB.collection('tasks').add(task);
+                console.log('✅ Task saved with ID:', docRef.id);
+                
+                // Add to local array with ID
+                const newTask = { ...task, id: docRef.id };
+                tasks.push(newTask);
+                
+                // Update UI
+                renderTasksUI();
+                updateTaskCounts();
+                
+                const successMessage = task.projectId ? 
+                    `✅ Task created and assigned to project!` : 
+                    '✅ Task created successfully!';
+                
+                showTaskNotification(successMessage, 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addTaskModal'));
+                if (modal) modal.hide();
+                
+                // Trigger dashboard update
+                triggerDashboardUpdate('created', newTask);
+                
+            } catch (error) {
+                console.error('❌ Error saving task:', error);
+                showTaskNotification('❌ Error saving task', 'error');
+            }
+        }
+        
+        // Update task in Firestore
+        async function updateTaskInFirestore(task) {
+            if (!tasksDB || !task.id) return;
+            
+            try {
+                console.log('🔄 Updating task in Firestore:', task.id);
+                
+                await tasksDB.collection('tasks').doc(task.id).update({
+                    status: task.status,
+                    updatedAt: new Date().toISOString()
+                });
+                
+                console.log('✅ Task updated successfully');
+                
+                // Update UI
+                renderTasksUI();
+                updateTaskCounts();
+                
+                // Update project progress if task is assigned to a project
+                if (task.projectId) {
+                    updateProjectProgress(task.projectId);
+                }
+                
+                // Trigger dashboard update
+                triggerDashboardUpdate('updated', task);
+                
+            } catch (error) {
+                console.error('❌ Error updating task:', error);
+                showTaskNotification('❌ Error updating task', 'error');
+            }
+        }
+        
+        // Move task functions
+        function moveTaskToDoing(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.status = 'Doing';
+                updateTaskInFirestore(task);
+                showTaskNotification('▶️ Task moved to In Progress!', 'info');
+            }
         }
 
-        function drag(ev) {
-            ev.dataTransfer.setData("text", ev.target.innerText);
-            ev.dataTransfer.setData("taskElement", ev.target.outerHTML);
-            ev.dataTransfer.setData("sourceColumn", ev.target.parentNode.id); // Get the source column
+        function moveTaskToDone(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.status = 'Done';
+                updateTaskInFirestore(task);
+                showTaskNotification('✅ Task completed!', 'success');
+            }
+        }
+        
+        // Delete task
+        function deleteTask(taskId, taskName) {
+            if (!tasksDB || !tasksCurrentUser) return;
+            
+            if (!confirm(`Are you sure you want to delete "${taskName}"?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+            
+            console.log('🗑️ Deleting task:', taskId);
+            
+            tasksDB.collection('tasks').doc(taskId).delete().then(() => {
+                console.log('✅ Task deleted successfully');
+                
+                // Find the task before removing
+                const deletedTask = tasks.find(t => t.id === taskId);
+                
+                // Remove from local array
+                tasks = tasks.filter(t => t.id !== taskId);
+                
+                // Update UI
+                renderTasksUI();
+                updateTaskCounts();
+                
+                showTaskNotification('🗑️ Task deleted successfully!', 'success');
+                
+                // Update project progress if task was assigned to a project
+                if (deletedTask && deletedTask.projectId) {
+                    updateProjectProgress(deletedTask.projectId);
+                }
+                
+                // Trigger dashboard update
+                triggerDashboardUpdate('deleted', deletedTask);
+                
+            }).catch(error => {
+                console.error('❌ Error deleting task:', error);
+                showTaskNotification('❌ Error deleting task', 'error');
+            });
+        }
+        
+        // Update project progress
+        async function updateProjectProgress(projectId) {
+            if (!projectId || !tasksDB || !tasksCurrentUser) return;
+            
+            try {
+                console.log('📊 Updating project progress for:', projectId);
+                
+                // Get all tasks for this project
+                const projectTasksSnapshot = await tasksDB.collection('tasks')
+                    .where('projectId', '==', projectId)
+                    .where('uid', '==', tasksCurrentUser.uid)
+                    .get();
+                
+                const projectTasks = projectTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                if (projectTasks.length === 0) {
+                    console.log('ℹ️ No tasks found for project');
+                    return;
+                }
+                
+                // Calculate progress
+                const completedTasks = projectTasks.filter(task => {
+                    const status = task.status?.toLowerCase();
+                    return status === 'done' || status === 'completed' || status === 'complete';
+                });
+                
+                const progressPercentage = Math.round((completedTasks.length / projectTasks.length) * 100);
+                
+                console.log(`📊 Project ${projectId}: ${completedTasks.length}/${projectTasks.length} tasks completed (${progressPercentage}%)`);
+                
+                // Update project progress in Firebase
+                await tasksDB.collection('projects').doc(projectId).update({
+                    progress: progressPercentage,
+                    updatedAt: new Date().toISOString()
+                });
+                
+                console.log(`✅ Project progress updated to ${progressPercentage}%`);
+                
+                showTaskNotification(`📊 Project progress updated: ${progressPercentage}%`, 'info');
+                
+            } catch (error) {
+                console.error('❌ Error updating project progress:', error);
+            }
+        }
+        
+        // Trigger dashboard update
+        function triggerDashboardUpdate(action, task) {
+            if (typeof window.dispatchEvent === 'function') {
+                const event = new CustomEvent('taskUpdated', {
+                    detail: { 
+                        action: action,
+                        task: task,
+                        taskId: task.id,
+                        projectId: task.projectId,
+                        totalTasks: tasks.length,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+                window.dispatchEvent(event);
+                console.log('📡 Dashboard update event dispatched:', action);
+            }
+        }
+        
+        // Update due date countdown
+        function updateDueCountdown() {
+            const dueInput = document.getElementById('newTaskDue');
+            const countdown = document.getElementById('dueCountdown');
+            
+            if (!dueInput || !countdown) return;
+            
+            const dueDate = new Date(dueInput.value);
+            const now = new Date();
+            
+            if (dueInput.value) {
+                const timeDiff = dueDate - now;
+                const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                
+                if (daysDiff < 0) {
+                    countdown.textContent = `⚠️ This date is in the past`;
+                    countdown.className = 'form-text text-danger';
+                } else if (daysDiff === 0) {
+                    countdown.textContent = `📅 Due today`;
+                    countdown.className = 'form-text text-warning';
+                } else if (daysDiff === 1) {
+                    countdown.textContent = `📅 Due tomorrow`;
+                    countdown.className = 'form-text text-warning';
+                } else {
+                    countdown.textContent = `📅 Due in ${daysDiff} days`;
+                    countdown.className = 'form-text text-muted';
+                }
+            } else {
+                countdown.textContent = '';
+            }
+        }
+        
+        // Render all tasks modal
+        function renderAllTasksModal() {
+            console.log('📋 Rendering all tasks modal...');
+            const modalBody = document.getElementById('allTasksModalBody');
+            const filter = document.getElementById('taskFilter')?.value || 'all';
+            
+            if (!modalBody) return;
+            
+            let filteredTasks = tasks;
+            if (filter === 'completed') {
+                filteredTasks = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status === 'done' || status === 'completed' || status === 'complete';
+                });
+            } else if (filter === 'ongoing') {
+                filteredTasks = tasks.filter(t => {
+                    const status = t.status?.toLowerCase();
+                    return status !== 'done' && status !== 'completed' && status !== 'complete';
+                });
+            }
+            
+            if (filteredTasks.length === 0) {
+                modalBody.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                        <h5>No ${filter} tasks found</h5>
+                        <p class="text-muted">Tasks matching your filter will appear here</p>
+                    </div>
+                `;
+            } else {
+                modalBody.innerHTML = filteredTasks.map(task => `
+                    <div class="task-item mb-2 p-3 border rounded d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6>${task.name}</h6>
+                            <p class="mb-1">${task.description || 'No description'}</p>
+                            ${task.projectName ? `<small class="text-info"><i class="fas fa-project-diagram"></i> ${task.projectName}</small><br>` : ''}
+                            <small class="text-muted">Status: ${task.status || 'To Do'} | Priority: ${task.priority || 'Medium'}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTask('${task.id}', '${task.name.replace(/'/g, '\\\'')}')" title="Delete Task">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        // Drag and drop functions
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('drag-over');
         }
 
         function drop(ev, status) {
             ev.preventDefault();
-            const data = ev.dataTransfer.getData("text");
-            const taskElementHTML = ev.dataTransfer.getData("taskElement");
-            const sourceColumn = ev.dataTransfer.getData("sourceColumn");
-
-            // Remove task from old status
-            tasks = tasks.filter(task => task.name !== data);
-
-            // Create a new task object with the new status
-            const newTask = { name: data, status };
-            tasks.push(newTask);
-
-            // Append the new task into the correct column
-            const targetColumn = document.getElementById(status.toLowerCase());
-            const newTaskElement = document.createElement('div');
-            newTaskElement.classList.add('draggable');
-            newTaskElement.setAttribute('draggable', 'true');
-            newTaskElement.setAttribute('ondragstart', 'drag(event)');
-            newTaskElement.innerHTML = data;
-            targetColumn.appendChild(newTaskElement);
-
-            // Remove the task from the source column
-            const sourceColumnElement = document.getElementById(sourceColumn);
-            const originalTask = Array.from(sourceColumnElement.children).find(child => child.innerText === data);
-            if (originalTask) {
-                sourceColumnElement.removeChild(originalTask);
+            ev.currentTarget.classList.remove('drag-over');
+            
+            const taskId = ev.dataTransfer.getData('text/plain');
+            const task = tasks.find(t => t.id === taskId);
+            
+            if (task && task.status !== status) {
+                const oldStatus = task.status;
+                task.status = status;
+                updateTaskInFirestore(task);
+                showTaskNotification(`📋 Task moved to ${status}!`, 'info');
             }
         }
-
-        function addTask() {
-            const taskInput = document.getElementById('newTaskInput');
-            const taskName = taskInput.value.trim();
-            if (taskName) {
-                // Create a new task object
-                const newTask = { name: taskName, status: 'To Do' };
-                tasks.push(newTask);
-
-                // Create a new task element
-                const newTaskElement = document.createElement('div');
-                newTaskElement.classList.add('draggable');
-                newTaskElement.setAttribute('draggable', 'true');
-                newTaskElement.setAttribute('ondragstart', 'drag(event)');
-                newTaskElement.innerText = taskName;
-
-                const todoColumn = document.getElementById('todo');
-                todoColumn.appendChild(newTaskElement);
-                taskInput.value = '';
-            }
+        
+        // Show notification
+        function showTaskNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                max-width: 300px;
+                font-weight: 500;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
         }
+        
+        // Make functions globally available
+        window.addTaskAndClose = addTaskAndClose;
+        window.updateDueCountdown = updateDueCountdown;
+        window.renderAllTasksModal = renderAllTasksModal;
+        window.deleteTask = deleteTask;
+        window.allowDrop = allowDrop;
+        window.drop = drop;
+        
+        // Modal event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const addTaskModal = document.getElementById('addTaskModal');
+            if (addTaskModal) {
+                addTaskModal.addEventListener('show.bs.modal', function() {
+                    // Reload projects when modal opens
+                    loadProjectsForTasks();
+                });
+            }
+        });
+        
+        // Initialize everything when Firebase is ready
+        waitForTasksFirebase(function() {
+            console.log('✅ Firebase ready for tasks');
+            setupTasks();
+            console.log('✅ Tasks setup complete');
+        });
+        
+        console.log('📝 Tasks script loaded');
     </script>
-
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
-</html>
+}

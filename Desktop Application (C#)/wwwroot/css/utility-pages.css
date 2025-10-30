@@ -1,0 +1,344 @@
+/* Modern Utility Pages Styles (Error, Privacy, etc.) */
+
+.utility-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2.5rem;
+    margin: -2rem -2rem 2.5rem -2rem;
+    border-radius: 0 0 20px 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.utility-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><defs><radialGradient id="a" cx="50%" cy="0%" r="100%"><stop offset="0%" stop-color="rgba(255,255,255,.1)"/><stop offset="100%" stop-color="rgba(255,255,255,0)"/></radialGradient></defs><rect width="100" height="20" fill="url(%23a)"/></svg>');
+    opacity: 0.3;
+}
+
+.utility-header-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+.utility-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    font-family: 'Poppins', sans-serif;
+}
+
+.utility-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.utility-card {
+    background: white;
+    border-radius: 20px;
+    padding: 3rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    border: 1px solid #e2e8f0;
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.utility-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: var(--card-gradient);
+}
+
+.error-card::before {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.privacy-card::before {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+/* Error Page Specific */
+.error-icon {
+    font-size: 5rem;
+    color: #f093fb;
+    margin-bottom: 1.5rem;
+}
+
+.error-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 1rem;
+    font-family: 'Poppins', sans-serif;
+}
+
+.error-message {
+    font-size: 1.1rem;
+    color: #64748b;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.error-details {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.error-details-title {
+    font-weight: 600;
+    color: #dc2626;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.request-id {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-family: monospace;
+    font-size: 0.875rem;
+    color: #475569;
+}
+
+.development-info {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.development-info h3 {
+    color: #d97706;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.development-info p {
+    color: #92400e;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.development-info p:last-child {
+    margin-bottom: 0;
+}
+
+/* Privacy Page Specific */
+.privacy-section {
+    margin-bottom: 2.5rem;
+}
+
+.privacy-section h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.privacy-section p {
+    color: #4a5568;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+}
+
+.privacy-section ul {
+    color: #4a5568;
+    padding-left: 1.5rem;
+}
+
+.privacy-section li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+}
+
+.privacy-highlight {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.privacy-highlight strong {
+    color: #0c4a6e;
+}
+
+/* Action Buttons */
+.utility-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 2px solid #f1f5f9;
+}
+
+.btn-utility {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    border: none;
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+
+.btn-utility::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-utility:hover::before {
+    left: 100%;
+}
+
+.btn-utility:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    text-decoration: none;
+}
+
+.btn-home {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(67, 233, 123, 0.3);
+}
+
+.btn-back {
+    background: #f8fafc;
+    color: #64748b;
+    border: 2px solid #e2e8f0;
+}
+
+.btn-back:hover {
+    background: #f1f5f9;
+    color: #4a5568;
+    border-color: #cbd5e0;
+}
+
+.btn-report {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+/* Contact Information */
+.contact-info {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.contact-info h3 {
+    color: #1a202c;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    color: #4a5568;
+}
+
+.contact-item:last-child {
+    margin-bottom: 0;
+}
+
+.contact-item i {
+    color: #667eea;
+    width: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .utility-header {
+        padding: 2rem 1rem;
+        margin: -1rem -1rem 2rem -1rem;
+    }
+    
+    .utility-title {
+        font-size: 2rem;
+    }
+    
+    .utility-card {
+        padding: 2rem 1.5rem;
+    }
+    
+    .error-icon {
+        font-size: 3rem;
+    }
+    
+    .error-title {
+        font-size: 1.5rem;
+    }
+    
+    .utility-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-utility {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Animation for page load */
+.utility-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

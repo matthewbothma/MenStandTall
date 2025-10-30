@@ -362,3 +362,32 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /wwwroot/uploads
+
+# ===============================================
+# SECURITY: Sensitive Configuration Files
+# ===============================================
+
+# Environment-specific settings with secrets
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+
+# User secrets
+secrets.json
+appsettings.secrets.json
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# Firebase service account keys
+firebase-service-account.json
+serviceAccountKey.json
+
+# Other API keys and secrets
+*.key
+*.pem
+*.crt
+secrets/

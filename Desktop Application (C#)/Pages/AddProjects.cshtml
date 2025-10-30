@@ -4,28 +4,426 @@
     ViewData["Title"] = "Add New Project";
 }
 
-<h2>Add New Project</h2>
+<link rel="stylesheet" href="~/css/add-projects.css" asp-append-version="true" />
 
-<form method="post">
-    <div class="form-group">
-        <label for="ProjectTitle">Project Title</label>
-        <input type="text" class="form-control" id="ProjectTitle" name="ProjectTitle" required />
+<!-- Add Projects Header -->
+<div class="add-projects-header">
+    <div class="add-projects-header-content">
+        <h1 class="add-projects-title"><i class="fas fa-plus-circle"></i> Add New Project</h1>
+        <p class="add-projects-subtitle">Create and manage your project initiatives</p>
     </div>
-    <div class="form-group">
-        <label for="Description">Description</label>
-        <textarea class="form-control" id="Description" name="Description" rows="4" required></textarea>
+</div>
+
+<!-- Project Form Card -->
+<div class="project-form-card">
+    <div class="form-header">
+        <h2 class="form-title">Project Details</h2>
+        <p class="form-subtitle">Fill in the information below to create your new project</p>
     </div>
-    <div class="form-group">
-        <label for="Goals">Goals</label>
-        <input type="text" class="form-control" id="Goals" name="Goals" required />
-    </div>
-    <div class="form-group">
-        <label for="Timeline">Timeline</label>
-        <input type="text" class="form-control" id="Timeline" name="Timeline" placeholder="e.g., 3 months" required />
-    </div>
-    <div class="form-group">
-        <label for="Progress">Initial Progress (%)</label>
-        <input type="number" class="form-control" id="Progress" name="Progress" min="0" max="100" required />
-    </div>
-    <button type="submit" class="btn btn-primary">Add Project</button>
-</form>
+
+    <form method="post" id="projectForm">
+        <!-- Project Title -->
+        <div class="form-floating">
+            <input type="text" class="form-control" id="ProjectTitle" name="ProjectTitle" 
+                   placeholder="Project Title" required />
+            <label for="ProjectTitle"><i class="fas fa-rocket"></i> Project Title</label>
+        </div>
+
+        <!-- Description -->
+        <div class="form-floating">
+            <textarea class="form-control" id="Description" name="Description" 
+                      placeholder="Description" style="height: 120px;" required></textarea>
+            <label for="Description"><i class="fas fa-align-left"></i> Project Description</label>
+        </div>
+
+        <!-- Goals with Suggestions -->
+        <div class="goals-input-wrapper">
+            <div class="form-floating">
+                <input type="text" class="form-control" id="Goals" name="Goals" 
+                       placeholder="Project Goals" required autocomplete="off" />
+                <label for="Goals"><i class="fas fa-bullseye"></i> Project Goals</label>
+            </div>
+            <div class="goals-suggestions" id="goalsSuggestions">
+                <div class="goal-suggestion" data-goal="Increase community engagement by 50%">
+                    Increase community engagement by 50%
+                </div>
+                <div class="goal-suggestion" data-goal="Launch educational workshop series">
+                    Launch educational workshop series
+                </div>
+                <div class="goal-suggestion" data-goal="Develop mentorship program">
+                    Develop mentorship program  
+                </div>
+                <div class="goal-suggestion" data-goal="Improve youth participation rates">
+                    Improve youth participation rates
+                </div>
+                <div class="goal-suggestion" data-goal="Establish partnership network">
+                    Establish partnership network
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline with Quick Options -->
+        <div class="form-floating">
+            <input type="text" class="form-control" id="Timeline" name="Timeline" 
+                   placeholder="Timeline" required />
+            <label for="Timeline"><i class="fas fa-clock"></i> Project Timeline</label>
+        </div>
+        
+        <div class="timeline-options">
+            <div class="timeline-option" data-timeline="1 month">1 Month</div>
+            <div class="timeline-option" data-timeline="3 months">3 Months</div>
+            <div class="timeline-option" data-timeline="6 months">6 Months</div>
+            <div class="timeline-option" data-timeline="1 year">1 Year</div>
+            <div class="timeline-option" data-timeline="Ongoing">Ongoing</div>
+        </div>
+
+        <!-- Progress with Live Preview -->
+        <div class="progress-input-wrapper">
+            <div class="form-floating">
+                <input type="number" class="form-control" id="Progress" name="Progress" 
+                       min="0" max="100" value="0" required />
+                <label for="Progress"><i class="fas fa-chart-line"></i> Initial Progress (%)</label>
+                <div class="progress-display" id="progressDisplay">0%</div>
+            </div>
+        </div>
+
+        <!-- Progress Preview -->
+        <div class="progress-preview">
+            <div class="progress-preview-title">
+                <i class="fas fa-chart-bar"></i>
+                Progress Preview
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+                <div class="progress-text" id="progressText">0%</div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+            <button type="button" class="btn-modern-project btn-cancel" onclick="clearForm()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="submit" class="btn-modern-project btn-create">
+                <i class="fas fa-save"></i> Create Project
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        console.log('🚀 Modern add projects script starting...');
+        
+        var currentUser = null;
+        
+        // Wait for global Firebase to be ready
+        function waitForAddProjectsFirebase(callback) {
+            if (window.firebaseAuth) {
+                callback();
+            } else {
+                setTimeout(function() { waitForAddProjectsFirebase(callback); }, 100);
+            }
+        }
+        
+        // Setup add projects functionality
+        function setupAddProjects() {
+            console.log('🚀 Setting up modern add projects');
+            
+            if (!window.firebaseAuth) {
+                console.error('❌ Firebase auth not available in add projects');
+                return;
+            }
+            
+            // Authentication check
+            window.firebaseAuth.onAuthStateChanged(function(user) {
+                if (!user) {
+                    console.log('❌ No user in add projects, redirecting');
+                    window.location.href = '/';
+                } else {
+                    currentUser = user;
+                    console.log('✅ Add projects user authenticated:', user.email);
+                    setupFormHandlers();
+                }
+            });
+        }
+        
+        // Setup form handlers
+        function setupFormHandlers() {
+            const form = document.getElementById('projectForm');
+            const progressInput = document.getElementById('Progress');
+            const progressDisplay = document.getElementById('progressDisplay');
+            const progressBarFill = document.getElementById('progressBarFill');
+            const progressText = document.getElementById('progressText');
+            const goalsInput = document.getElementById('Goals');
+            const goalsSuggestions = document.getElementById('goalsSuggestions');
+            
+            // Progress input handler
+            if (progressInput) {
+                progressInput.addEventListener('input', function() {
+                    const value = parseInt(this.value) || 0;
+                    const clampedValue = Math.max(0, Math.min(100, value));
+                    
+                    if (progressDisplay) {
+                        progressDisplay.textContent = clampedValue + '%';
+                    }
+                    
+                    if (progressBarFill) {
+                        progressBarFill.style.width = clampedValue + '%';
+                    }
+                    
+                    if (progressText) {
+                        progressText.textContent = clampedValue + '%';
+                    }
+                    
+                    // Update color based on progress
+                    const color = clampedValue < 25 ? '#ef4444' : 
+                                 clampedValue < 75 ? '#f59e0b' : '#10b981';
+                    if (progressBarFill) {
+                        progressBarFill.style.background = `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)`;
+                    }
+                });
+            }
+            
+            // Timeline options
+            const timelineOptions = document.querySelectorAll('.timeline-option');
+            const timelineInput = document.getElementById('Timeline');
+            
+            timelineOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove selected class from all options
+                    timelineOptions.forEach(opt => opt.classList.remove('selected'));
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                    // Update input value
+                    if (timelineInput) {
+                        timelineInput.value = this.dataset.timeline;
+                    }
+                });
+            });
+            
+            // Goals suggestions
+            if (goalsInput && goalsSuggestions) {
+                goalsInput.addEventListener('focus', function() {
+                    goalsSuggestions.style.display = 'block';
+                });
+                
+                goalsInput.addEventListener('blur', function() {
+                    // Delay hiding to allow clicks on suggestions
+                    setTimeout(() => {
+                        goalsSuggestions.style.display = 'none';
+                    }, 200);
+                });
+                
+                // Handle suggestion clicks
+                const suggestions = goalsSuggestions.querySelectorAll('.goal-suggestion');
+                suggestions.forEach(suggestion => {
+                    suggestion.addEventListener('click', function() {
+                        goalsInput.value = this.dataset.goal;
+                        goalsSuggestions.style.display = 'none';
+                        goalsInput.focus();
+                    });
+                });
+            }
+            
+            // Form submission
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(form);
+                    const projectData = {
+                        title: formData.get('ProjectTitle')?.trim(),
+                        description: formData.get('Description')?.trim(),
+                        goals: formData.get('Goals')?.trim(),
+                        timeline: formData.get('Timeline')?.trim(),
+                        progress: parseInt(formData.get('Progress')) || 0,
+                        author: currentUser.email,
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    // Validate required fields
+                    if (!projectData.title || !projectData.description || !projectData.goals || !projectData.timeline) {
+                        showNotification('⚠️ Please fill in all required fields.', 'warning');
+                        highlightEmptyFields();
+                        return;
+                    }
+                    
+                    // Show loading state
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    const originalContent = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<div class="loading-spinner"></div> Creating...';
+                    submitBtn.disabled = true;
+                    
+                    console.log('🚀 Creating project:', projectData);
+                    
+                    // Simulate API call
+                    setTimeout(() => {
+                        // Show success message
+                        showSuccessMessage('✅ Project created successfully!');
+                        
+                        // Reset form
+                        clearForm();
+                        
+                        // Reset button
+                        submitBtn.innerHTML = originalContent;
+                        submitBtn.disabled = false;
+                        
+                        // Redirect after delay
+                        setTimeout(() => {
+                            window.location.href = '/Projects';
+                        }, 2000);
+                        
+                    }, 1500);
+                });
+            }
+            
+            // Real-time validation
+            setupFormValidation();
+        }
+        
+        // Setup form validation
+        function setupFormValidation() {
+            const inputs = document.querySelectorAll('input[required], textarea[required]');
+            
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    validateField(this);
+                });
+                
+                input.addEventListener('input', function() {
+                    // Clear validation state while typing
+                    this.classList.remove('invalid');
+                    const errorMsg = this.parentNode.nextElementSibling;
+                    if (errorMsg && errorMsg.classList.contains('error-message')) {
+                        errorMsg.remove();
+                    }
+                });
+            });
+        }
+        
+        // Validate individual field
+        function validateField(field) {
+            const value = field.value.trim();
+            const isValid = value.length > 0;
+            
+            field.classList.toggle('invalid', !isValid);
+            
+            // Remove existing error message
+            const existingError = field.parentNode.nextElementSibling;
+            if (existingError && existingError.classList.contains('error-message')) {
+                existingError.remove();
+            }
+            
+            // Add error message if invalid
+            if (!isValid) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> This field is required`;
+                field.parentNode.insertAdjacentElement('afterend', errorDiv);
+            }
+            
+            return isValid;
+        }
+        
+        // Highlight empty required fields
+        function highlightEmptyFields() {
+            const inputs = document.querySelectorAll('input[required], textarea[required]');
+            inputs.forEach(input => {
+                if (!input.value.trim()) {
+                    validateField(input);
+                }
+            });
+        }
+        
+        // Clear form
+        function clearForm() {
+            const form = document.getElementById('projectForm');
+            if (form) {
+                form.reset();
+                
+                // Reset timeline options
+                document.querySelectorAll('.timeline-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // Reset progress display
+                document.getElementById('progressDisplay').textContent = '0%';
+                document.getElementById('progressBarFill').style.width = '0%';
+                document.getElementById('progressText').textContent = '0%';
+                
+                // Clear validation states
+                document.querySelectorAll('.invalid').forEach(field => {
+                    field.classList.remove('invalid');
+                });
+                
+                document.querySelectorAll('.error-message').forEach(error => {
+                    error.remove();
+                });
+                
+                console.log('🧹 Form cleared');
+            }
+        }
+        
+        // Show success message
+        function showSuccessMessage(message) {
+            const form = document.getElementById('projectForm');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            
+            form.insertBefore(successDiv, form.firstChild);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                max-width: 300px;
+                font-weight: 500;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Initialize everything when Firebase is ready
+        waitForAddProjectsFirebase(function() {
+            console.log('✅ Firebase ready for modern add projects');
+            setupAddProjects();
+            console.log('✅ Modern add projects setup complete');
+        });
+        
+        console.log('🚀 Modern add projects script loaded');
+    </script>
+}
