@@ -1,0 +1,14 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_edit_status_active"
+        android:title="Mark Active"/>
+    <item
+        android:id="@+id/action_edit_status_completed"
+        android:title="Mark Completed"/>
+    <item
+        android:id="@+id/action_edit_status_on_hold"
+        android:title="Mark On Hold"/>
+    <item
+        android:id="@+id/action_delete"
+        android:title="Delete Project"/>
+</menu>

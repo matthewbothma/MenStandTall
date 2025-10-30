@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -39,14 +40,21 @@ class TasksFragment : Fragment() {
         setupRecyclerView()
         observeTasks()
 
-        // Navigate to NewTaskFragment using Navigation Component
         binding.fabAddTask.setOnClickListener {
             findNavController().navigate(R.id.action_tasksFragment_to_newTaskFragment)
         }
     }
 
     private fun setupRecyclerView() {
-        adapter = TasksAdapter()
+        adapter = TasksAdapter(
+            onStatusChange = { task, newStatus ->
+                lifecycleScope.launch {
+                    val result = viewModel.updateTaskStatus(task, newStatus)
+                    result.onFailure { Toast.makeText(requireContext(), "Failed to update status", Toast.LENGTH_SHORT).show() }
+                }
+            }
+        )
+
         binding.recyclerViewTasks.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@TasksFragment.adapter
@@ -76,4 +84,5 @@ class TasksFragment : Fragment() {
         _binding = null
     }
 }
+
 

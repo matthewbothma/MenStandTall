@@ -1,16 +1,21 @@
 package com.example.mensstandtall.ui.projects
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.mensstandtall.R
 import com.example.mensstandtall.databinding.ItemProjectBinding
 import com.example.mensstandtall.models.Project
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ProjectsAdapter : ListAdapter<Project, ProjectsAdapter.ProjectViewHolder>(ProjectDiffCallback()) {
+class ProjectsAdapter(
+    private val onUpdateStatus: (Project, String) -> Unit
+) : ListAdapter<Project, ProjectsAdapter.ProjectViewHolder>(ProjectDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProjectViewHolder {
         val binding = ItemProjectBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -21,28 +26,19 @@ class ProjectsAdapter : ListAdapter<Project, ProjectsAdapter.ProjectViewHolder>(
         holder.bind(getItem(position))
     }
 
-    class ProjectViewHolder(private val binding: ItemProjectBinding) :
+    inner class ProjectViewHolder(private val binding: ItemProjectBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(project: Project) {
             binding.tvProjectName.text = project.name
             binding.tvProjectDescription.text = project.description
             binding.tvProjectStatus.text = project.status
-            binding.tvProjectProgress.text = "${project.progress}%"
-            binding.progressBar.progress = project.progress
 
-            // Safe parsing of deadline
             val dateFormat = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
             val deadlineDate = try {
                 SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(project.deadline)
-            } catch (e: Exception) {
-                null
-            }
-            binding.tvDueDate.text = if (deadlineDate != null) {
-                "Due: ${dateFormat.format(deadlineDate)}"
-            } else {
-                "Due: N/A"
-            }
+            } catch (e: Exception) { null }
+            binding.tvDueDate.text = "Due: ${deadlineDate?.let { dateFormat.format(it) } ?: "N/A"}"
 
             val statusColor = when (project.status) {
                 "Active" -> android.graphics.Color.parseColor("#48BB78")
@@ -50,6 +46,20 @@ class ProjectsAdapter : ListAdapter<Project, ProjectsAdapter.ProjectViewHolder>(
                 else -> android.graphics.Color.parseColor("#F56565")
             }
             binding.tvProjectStatus.setTextColor(statusColor)
+
+            // Remove delete, only handle status
+            binding.ivMenu.setOnClickListener {
+                val statuses = arrayOf("Active", "Completed", "On Hold")
+                androidx.appcompat.app.AlertDialog.Builder(binding.root.context)
+                    .setTitle("Change Status")
+                    .setItems(statuses) { _, index ->
+                        val newStatus = statuses[index]
+                        if (newStatus != project.status) {
+                            onUpdateStatus(project, newStatus)
+                        }
+                    }
+                    .show()
+            }
         }
     }
 
@@ -58,4 +68,5 @@ class ProjectsAdapter : ListAdapter<Project, ProjectsAdapter.ProjectViewHolder>(
         override fun areContentsTheSame(oldItem: Project, newItem: Project) = oldItem == newItem
     }
 }
+
 

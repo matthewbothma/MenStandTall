@@ -12,16 +12,16 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.mensstandtall.databinding.FragmentNewTaskBinding
 import com.example.mensstandtall.models.Task
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlinx.coroutines.launch
 
 class NewTaskFragment : Fragment() {
 
     private var _binding: FragmentNewTaskBinding? = null
     private val binding get() = _binding!!
     private val viewModel: TasksViewModel by viewModels()
-
     private var selectedDueDate: Long = 0
 
     override fun onCreateView(
@@ -62,35 +62,33 @@ class NewTaskFragment : Fragment() {
     private fun setupDatePicker() {
         binding.etDueDate.setOnClickListener {
             val calendar = Calendar.getInstance()
-            val datePicker = DatePickerDialog(
+            DatePickerDialog(
                 requireContext(),
                 { _, year, month, day ->
                     calendar.set(year, month, day)
                     selectedDueDate = calendar.timeInMillis
-                    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) // match string format
+                    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                     binding.etDueDate.setText(sdf.format(calendar.time))
                 },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH)
-            )
-            datePicker.show()
+            ).show()
         }
     }
 
     private fun createTask() {
-        val name = binding.etTaskTitle.text.toString().trim() // model expects 'name'
+        val name = binding.etTaskTitle.text.toString().trim()
         val description = binding.etTaskDescription.text.toString().trim()
         val status = binding.spinnerStatus.selectedItem.toString()
         val priority = binding.spinnerPriority.selectedItem.toString()
-        val projectId = "" // optional, or get from another field if needed
+        val projectId = "" // optional
 
         if (name.isEmpty()) {
             Toast.makeText(requireContext(), "Please enter task title", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Convert selectedDueDate to string format for your model
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val deadlineString = if (selectedDueDate != 0L) sdf.format(Date(selectedDueDate)) else ""
 
@@ -101,8 +99,8 @@ class NewTaskFragment : Fragment() {
             priority = priority,
             projectId = projectId,
             deadline = deadlineString,
-            createdAt = sdf.format(Date()), // current date
-            updatedAt = sdf.format(Date())
+            createdAt = sdf.format(Date()),
+            updatedAt = sdf.format(Date()),
         )
 
         binding.progressBar.visibility = View.VISIBLE
@@ -127,4 +125,5 @@ class NewTaskFragment : Fragment() {
         _binding = null
     }
 }
+
 

@@ -41,7 +41,11 @@ class TasksViewModel : ViewModel() {
             }
         }
     }
-    suspend fun addTask(task: Task): Result<String> {
-        return repository.addTask(task)
-    }
+
+    suspend fun addTask(task: Task) = repository.addTask(task)
+    suspend fun updateTaskStatus(task: Task, newStatus: String) =
+        repository.updateTask(task.id!!, mapOf("status" to newStatus))
+    suspend fun deleteTask(task: Task) =
+        repository.deleteTask(task.id!!)
 }
+

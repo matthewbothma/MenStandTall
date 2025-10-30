@@ -116,9 +116,9 @@ class DashboardFragment : Fragment() {
 
         val dataSet = PieDataSet(entries, "").apply {
             colors = listOf(
-                Color.parseColor("#48BB78"), // Green
-                Color.parseColor("#FF8C69"), // Orange
-                Color.parseColor("#A0AEC0")  // Gray
+                Color.parseColor("#48BB78"),
+                Color.parseColor("#FF8C69"),
+                Color.parseColor("#A0AEC0")
             )
             sliceSpace = 3f
             valueTextSize = 12f

@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -33,12 +34,21 @@ class ProjectsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Set up RecyclerView
-        adapter = ProjectsAdapter()
+        // Set up RecyclerView with callbacks
+        adapter = ProjectsAdapter(
+            onUpdateStatus = { project, newStatus ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val result = viewModel.updateProjectStatus(project, newStatus)
+                    result.onFailure { e ->
+                        Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        )
+
         binding.recyclerViewProjects.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerViewProjects.adapter = adapter
 
-        // Observe projects list
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.projects.collectLatest { list ->
                 adapter.submitList(list)
@@ -46,7 +56,6 @@ class ProjectsFragment : Fragment() {
             }
         }
 
-        // Observe stats
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.stats.collectLatest { stats ->
                 binding.tvTotalProjects.text = stats.total.toString()
@@ -55,7 +64,6 @@ class ProjectsFragment : Fragment() {
             }
         }
 
-        // FloatingActionButton click – navigate to NewProjectFragment
         binding.fabAddProject.setOnClickListener {
             findNavController().navigate(R.id.action_projectsFragment_to_newProjectFragment)
         }

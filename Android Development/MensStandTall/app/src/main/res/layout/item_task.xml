@@ -76,6 +76,7 @@
                 android:text="To Do"
                 android:textSize="12sp"
                 android:textStyle="bold" />
+
         </LinearLayout>
 
         <TextView
@@ -86,6 +87,17 @@
             android:text="Due: 10/12/2025"
             android:textColor="#718096"
             android:textSize="12sp" />
+
+        <ImageView
+            android:id="@+id/ivMenu"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginLeft="350dp"
+            android:contentDescription="Menu"
+            android:src="@drawable/ic_more_vert"
+            android:visibility="visible" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

@@ -7,6 +7,7 @@ import com.example.mensstandtall.repository.ProjectRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuth
 
 data class ProjectStats(
     val total: Int = 0,
@@ -43,4 +44,13 @@ class ProjectsViewModel : ViewModel() {
         return repository.addProject(project)
     }
 
+    suspend fun updateProjectStatus(project: Project, newStatus: String): Result<Unit> {
+        return repository.updateProject(project.id, mapOf("status" to newStatus))
+    }
+
+    suspend fun deleteProject(project: Project): Result<Unit> {
+        return repository.deleteProject(project.id)
+    }
+
+    fun getCurrentUser() = FirebaseAuth.getInstance().currentUser
 }
