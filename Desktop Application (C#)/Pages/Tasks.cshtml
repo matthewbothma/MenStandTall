@@ -26,17 +26,6 @@
     </div>
 </div>
 
-<!-- User Info Card (Hidden by default) -->
-<div id="user-info" class="user-info-card" style="display: none;">
-    <div class="d-flex align-items-center">
-        <div class="user-avatar" id="task-user-avatar">U</div>
-        <div>
-            <div class="fw-bold" id="task-user-name">Loading...</div>
-            <small class="opacity-75">Task Management Dashboard</small>
-        </div>
-    </div>
-</div>
-
 <!-- Task Statistics -->
 <div class="task-stats">
     <div class="stat-card-task">
@@ -248,7 +237,7 @@
             });
         }
         
-        // Update user display
+        // Update user display in sidebar (use the same elements as _Layout.cshtml)
         function updateUserDisplay(user) {
             if (user) {
                 const displayName = user.displayName || user.email || 'User';
@@ -256,17 +245,25 @@
                 const atIndex = displayName.indexOf(emailSymbol);
                 const name = atIndex > -1 ? displayName.substring(0, atIndex) : displayName;
                 
-                // Update user name
-                const userNameEl = document.getElementById('task-user-name');
+                console.log('👤 Updating user display on Tasks page:', name);
+                
+                // Update user name in sidebar (same ID as _Layout.cshtml)
+                const userNameEl = document.getElementById('user-name');
                 if (userNameEl) {
                     userNameEl.textContent = name;
+                    console.log('✅ Updated sidebar user name:', name);
+                } else {
+                    console.warn('⚠️ Sidebar user-name element not found');
                 }
                 
-                // Update avatar initials
-                const avatarEl = document.getElementById('task-user-avatar');
+                // Update avatar initials in sidebar (same ID as _Layout.cshtml)
+                const avatarEl = document.getElementById('user-avatar');
                 if (avatarEl) {
                     const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
                     avatarEl.textContent = initials;
+                    console.log('✅ Updated sidebar avatar initials:', initials);
+                } else {
+                    console.warn('⚠️ Sidebar user-avatar element not found');
                 }
             }
         }
