@@ -64,7 +64,7 @@
                         <select id="Priority" class="form-control" required>
                             <option value="">-- Select Priority --</option>
                             <option value="High">High Priority</option>
-                            <option value="Medium">Medium Priority</option>
+                            <option value="Medium" selected>Medium Priority</option>
                             <option value="Low">Low Priority</option>
                         </select>
                         <label for="Priority"><i class="fas fa-exclamation-circle"></i> Priority Level</label>
@@ -76,23 +76,29 @@
                             <option value="announcement">Announcement</option>
                             <option value="meeting">Meeting</option>
                             <option value="project">Project Update</option>
-                            <option value="general">General</option>
+                            <option value="general" selected>General</option>
                         </select>
                         <label for="Category"><i class="fas fa-tags"></i> Category</label>
                     </div>
                 </div>
             </div>
 
+            <!-- Tags Input -->
+            <div class="form-floating">
+                <input type="text" id="MessageTags" class="form-control" placeholder="Tags (comma separated)" />
+                <label for="MessageTags"><i class="fas fa-hashtag"></i> Tags (optional, comma separated)</label>
+            </div>
+
             <!-- Action Buttons -->
             <div class="d-flex justify-content-end gap-2">
                 <button type="reset" class="btn-modern-message btn-clear">
-                    <i class="fas fa-eraser"></i> Clear
+                    Clear
                 </button>
                 <button type="button" class="btn-modern-message btn-clear" id="saveDraftBtn">
-                    <i class="fas fa-save"></i> Save Draft
+                    Save Draft
                 </button>
                 <button type="submit" class="btn-modern-message btn-send">
-                    <i class="fas fa-paper-plane"></i> Send Message
+                    Send Message
                 </button>
             </div>
         </form>
@@ -101,14 +107,40 @@
     <!-- Messages List Card -->
     <div class="message-card messages-list-card">
         <div class="card-header-modern">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <h3 class="card-title"><i class="fas fa-inbox"></i> Recent Messages</h3>
                     <p class="card-subtitle">View and manage your messages</p>
                 </div>
-                <button class="btn-modern-message btn-secondary" onclick="refreshMessages()" id="refreshMessagesBtn">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <!-- Search Messages -->
+                    <div class="message-search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="messageSearchInput" placeholder="Search messages..." />
+                    </div>
+                    
+                    <!-- Filter by Category -->
+                    <select id="categoryFilter" class="filter-select-small">
+                        <option value="all">All Categories</option>
+                        <option value="announcement">Announcements</option>
+                        <option value="meeting">Meetings</option>
+                        <option value="project">Projects</option>
+                        <option value="general">General</option>
+                    </select>
+                    
+                    <!-- Filter by Status -->
+                    <select id="statusFilter" class="filter-select-small">
+                        <option value="all">All Messages</option>
+                        <option value="unread">Unread Only</option>
+                        <option value="sent">Sent Only</option>
+                        <option value="received">Received Only</option>
+                        <option value="starred">Starred Only</option>
+                    </select>
+                    
+                    <button class="btn-modern-message btn-secondary" onclick="refreshMessages()" id="refreshMessagesBtn">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -144,7 +176,7 @@
 
 <!-- Message Details Modal -->
 <div class="modal fade modal-modern" id="messageDetailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
@@ -160,7 +192,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times"></i> Close
                 </button>
-                <button type="button" class="btn-modern-message btn-send" onclick="replyToMessage()">
+                <button type="button" class="btn-modern-message btn-send" id="replyMessageBtn">
                     <i class="fas fa-reply"></i> Reply
                 </button>
             </div>
@@ -176,6 +208,10 @@
         var messages = [];
         var db = null;
         var drafts = [];
+        var messagesListener = null;
+        var filteredMessages = [];
+        var currentMessageId = null;
+        var starredMessageIds = new Set();
         
         // Wait for global Firebase to be ready
         function waitForMessagesFirebase(callback) {
@@ -208,61 +244,162 @@
                     setupMessageHandlers();
                     loadMessagesFromFirebase();
                     loadDraftsFromStorage();
+                    loadStarredMessages();
+                    setupRealtimeListeners();
                 }
             });
         }
         
-        // Load messages from Firebase
-        async function loadMessagesFromFirebase() {
+        // Setup real-time listeners for messages
+        function setupRealtimeListeners() {
             if (!db || !currentUser) return;
             
+            console.log('🔄 Setting up real-time message listeners');
+            
+            // Listen to ALL messages (not just current user's)
+            messagesListener = db.collection('messages')
+                .onSnapshot(function(snapshot) {
+                    console.log('🔔 Real-time update received:', snapshot.size, 'messages');
+                    
+                    snapshot.docChanges().forEach(function(change) {
+                        if (change.type === 'added') {
+                            console.log('➕ New message:', change.doc.id);
+                        }
+                        if (change.type === 'modified') {
+                            console.log('✏️ Message modified:', change.doc.id);
+                        }
+                        if (change.type === 'removed') {
+                            console.log('🗑️ Message removed:', change.doc.id);
+                        }
+                    });
+                    
+                    // Reload all messages
+                    loadMessagesFromFirebase();
+                }, function(error) {
+                    console.error('❌ Real-time listener error:', error);
+                    // If listener fails, still try to load messages once
+                    loadMessagesFromFirebase();
+                });
+        }
+        
+        // Load messages from Firebase
+        async function loadMessagesFromFirebase() {
+            if (!db || !currentUser) {
+                console.error('❌ Cannot load messages: db or currentUser is null');
+                return;
+            }
+            
             showLoadingState(true);
+            console.log('📥 Loading ALL messages for all users');
             
             try {
-                // Load sent messages
-                const sentSnapshot = await db.collection('messages')
-                    .where('authorId', '==', currentUser.uid)
-                    .orderBy('timestamp', 'desc')
+                // Get ALL messages - visible to everyone
+                const allMessagesSnapshot = await db.collection('messages')
                     .get();
                 
-                // Load received messages (if implementing team messages)
-                const receivedSnapshot = await db.collection('messages')
-                    .where('recipientId', '==', currentUser.uid)
-                    .orderBy('timestamp', 'desc')
-                    .get();
+                console.log('📨 Messages query returned:', allMessagesSnapshot.size, 'documents');
                 
-                const sentMessages = sentSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    type: 'sent'
-                }));
+                // Convert to array and mark as sent or received
+                const allMessages = allMessagesSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        type: data.authorId === currentUser.uid ? 'sent' : 'received'
+                    };
+                });
                 
-                const receivedMessages = receivedSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    type: 'received'
-                }));
+                console.log('✅ Processed messages:', allMessages);
                 
-                messages = [...sentMessages, ...receivedMessages].sort((a, b) => 
-                    new Date(b.timestamp) - new Date(a.timestamp)
-                );
+                messages = allMessages;
                 
-                console.log('✅ Messages loaded:', messages.length);
-                renderMessages();
+                // Sort by timestamp (client-side) - most recent first
+                messages.sort((a, b) => {
+                    const dateA = new Date(a.timestamp);
+                    const dateB = new Date(b.timestamp);
+                    return dateB - dateA;
+                });
+                
+                console.log('✅ Total messages loaded:', messages.length);
+                console.log('📋 Messages array:', messages);
+                
+                applyFilters();
                 updateMessageStats();
                 
             } catch (error) {
-                console.error('Error loading messages:', error);
+                console.error('❌ Error loading messages:', error);
+                console.error('Error details:', error.message);
+                showNotification('❌ Error loading messages: ' + error.message, 'error');
+                
+                // Show empty state on error
                 showEmptyState();
             } finally {
                 showLoadingState(false);
             }
         }
         
+        // Apply search and filters
+        function applyFilters() {
+            const searchTerm = document.getElementById('messageSearchInput')?.value.toLowerCase() || '';
+            const categoryFilter = document.getElementById('categoryFilter')?.value || 'all';
+            const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+            
+            console.log('🔍 Applying filters...');
+            console.log('Search term:', searchTerm);
+            console.log('Category filter:', categoryFilter);
+            console.log('Status filter:', statusFilter);
+            console.log('Total messages before filter:', messages.length);
+            
+            // Ensure messages is an array
+            if (!Array.isArray(messages)) {
+                console.warn('⚠️ Messages is not an array, initializing as empty array');
+                messages = [];
+            }
+            
+            filteredMessages = messages.filter(msg => {
+                // Ensure message has required properties
+                if (!msg || !msg.title || !msg.content) {
+                    console.warn('⚠️ Invalid message object:', msg);
+                    return false;
+                }
+                
+                // Search filter
+                const matchesSearch = !searchTerm || 
+                    msg.title.toLowerCase().includes(searchTerm) ||
+                    msg.content.toLowerCase().includes(searchTerm) ||
+                    (msg.tags && Array.isArray(msg.tags) && msg.tags.some(tag => tag.toLowerCase().includes(searchTerm)));
+                
+                // Category filter
+                const matchesCategory = categoryFilter === 'all' || msg.category === categoryFilter;
+                
+                // Status filter
+                let matchesStatus = true;
+                if (statusFilter === 'unread') {
+                    matchesStatus = !msg.read && msg.type === 'received';
+                } else if (statusFilter === 'sent') {
+                    matchesStatus = msg.type === 'sent';
+                } else if (statusFilter === 'received') {
+                    matchesStatus = msg.type === 'received';
+                } else if (statusFilter === 'starred') {
+                    matchesStatus = starredMessageIds.has(msg.id);
+                }
+                
+                return matchesSearch && matchesCategory && matchesStatus;
+            });
+            
+            console.log('✅ Filtered messages:', filteredMessages.length);
+            console.log('📋 Filtered messages array:', filteredMessages);
+            
+            renderMessages();
+        }
+        
         // Setup message form handlers
         function setupMessageHandlers() {
             const form = document.getElementById('messageForm');
             const saveDraftBtn = document.getElementById('saveDraftBtn');
+            const searchInput = document.getElementById('messageSearchInput');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const statusFilter = document.getElementById('statusFilter');
             
             // Send message form submission
             if (form) {
@@ -279,11 +416,34 @@
                 });
             }
             
+            // Search and filter handlers
+            if (searchInput) {
+                searchInput.addEventListener('input', debounce(applyFilters, 300));
+            }
+            
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', applyFilters);
+            }
+            
+            if (statusFilter) {
+                statusFilter.addEventListener('change', applyFilters);
+            }
+            
             // Auto-save draft periodically
             setInterval(autoSaveDraft, 30000); // Every 30 seconds
-            
-            // Message action handlers
-            setupMessageActions();
+        }
+        
+        // Debounce function for search
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
         
         // Send message
@@ -292,43 +452,78 @@
             const content = document.getElementById('MessageContent').value.trim();
             const priority = document.getElementById('Priority').value;
             const category = document.getElementById('Category').value;
+            const tagsInput = document.getElementById('MessageTags').value.trim();
+            
+            console.log('📤 Attempting to send message...');
+            console.log('Title:', title);
+            console.log('Content:', content);
+            console.log('Priority:', priority);
+            console.log('Category:', category);
             
             if (!title || !content || !priority) {
                 showNotification('⚠️ Please fill in all required fields.', 'warning');
                 return;
             }
             
+            if (!currentUser) {
+                console.error('❌ No current user!');
+                showNotification('❌ User not authenticated', 'error');
+                return;
+            }
+            
+            if (!db) {
+                console.error('❌ Database not initialized!');
+                showNotification('❌ Database not available', 'error');
+                return;
+            }
+            
+            const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+            
             const messageData = {
                 title: title,
                 content: content,
                 priority: priority,
                 category: category,
+                tags: tags,
                 timestamp: new Date().toISOString(),
                 authorId: currentUser.uid,
                 authorEmail: currentUser.email,
                 authorName: currentUser.displayName || currentUser.email,
                 status: 'sent',
-                read: false
+                read: false,
+                recipientIds: [], // Can be extended for team messaging
+                replies: [],
+                replyCount: 0
             };
             
+            console.log('📦 Message data to send:', messageData);
+            
             try {
+                console.log('🔄 Adding message to Firebase...');
                 const docRef = await db.collection('messages').add(messageData);
                 console.log('✅ Message sent with ID:', docRef.id);
+                console.log('✅ Message successfully added to Firebase!');
                 
                 showNotification('✅ Message sent successfully!', 'success');
                 
                 // Clear form
                 document.getElementById('messageForm').reset();
+                console.log('🧹 Form cleared');
                 
                 // Remove any saved draft
                 clearDraft();
                 
-                // Reload messages
-                await loadMessagesFromFirebase();
+                // Manually reload messages immediately to show the new message
+                console.log('🔄 Manually reloading messages...');
+                setTimeout(() => {
+                    loadMessagesFromFirebase();
+                }, 500); // Small delay to ensure Firebase has processed
                 
             } catch (error) {
-                console.error('Error sending message:', error);
-                showNotification('❌ Error sending message', 'error');
+                console.error('❌ Error sending message:', error);
+                console.error('Error details:', error.message);
+                console.error('Error code:', error.code);
+                showNotification('❌ Error sending message: ' + error.message, 'error');
             }
         }
         
@@ -338,6 +533,7 @@
             const content = document.getElementById('MessageContent').value.trim();
             const priority = document.getElementById('Priority').value;
             const category = document.getElementById('Category').value;
+            const tagsInput = document.getElementById('MessageTags').value.trim();
             
             if (!title && !content) {
                 showNotification('⚠️ Nothing to save as draft.', 'warning');
@@ -349,6 +545,7 @@
                 content: content,
                 priority: priority,
                 category: category,
+                tags: tagsInput,
                 timestamp: new Date().toISOString()
             };
             
@@ -363,7 +560,17 @@
             const content = document.getElementById('MessageContent')?.value.trim();
             
             if (title || content) {
-                saveDraft();
+                const draft = {
+                    title: title || '',
+                    content: content || '',
+                    priority: document.getElementById('Priority')?.value || 'Medium',
+                    category: document.getElementById('Category')?.value || 'general',
+                    tags: document.getElementById('MessageTags')?.value.trim() || '',
+                    timestamp: new Date().toISOString()
+                };
+                
+                localStorage.setItem('messageDraft', JSON.stringify(draft));
+                console.log('💾 Auto-saved draft');
             }
         }
         
@@ -374,12 +581,25 @@
                 try {
                     const draft = JSON.parse(savedDraft);
                     
+                    // Check if draft is recent (within 24 hours)
+                    const draftTime = new Date(draft.timestamp);
+                    const now = new Date();
+                    const hoursDiff = (now - draftTime) / (1000 * 60 * 60);
+                    
+                    if (hoursDiff > 24) {
+                        localStorage.removeItem('messageDraft');
+                        console.log('🗑️ Old draft removed');
+                        return;
+                    }
+                    
                     // Populate form with draft if user wants
-                    if (confirm('You have a saved draft. Would you like to load it?')) {
+                    if (confirm('You have a saved draft from ' + getTimeAgo(draftTime) + '. Would you like to load it?')) {
                         document.getElementById('MessageTitle').value = draft.title || '';
                         document.getElementById('MessageContent').value = draft.content || '';
-                        document.getElementById('Priority').value = draft.priority || '';
+                        document.getElementById('Priority').value = draft.priority || 'Medium';
                         document.getElementById('Category').value = draft.category || 'general';
+                        document.getElementById('MessageTags').value = draft.tags || '';
+                        showNotification('📝 Draft loaded successfully!', 'info');
                     }
                     
                     drafts = [draft];
@@ -405,64 +625,117 @@
         // Render messages
         function renderMessages() {
             const messagesList = document.getElementById('messagesList');
+            const emptyState = document.getElementById('emptyMessages');
             
-            if (messages.length === 0) {
-                showEmptyState();
+            console.log('🎨 Rendering messages...');
+            console.log('Filtered messages to render:', filteredMessages.length);
+            console.log('Total messages:', messages.length);
+            
+            if (filteredMessages.length === 0) {
+                console.log('📭 No filtered messages to display');
+                messagesList.style.display = 'none';
+                if (messages.length === 0) {
+                    console.log('📭 No messages at all - showing empty state');
+                    showEmptyState();
+                } else {
+                    // Show "no results" message for filters
+                    console.log('🔍 Messages exist but none match filters');
+                    messagesList.style.display = 'block';
+                    messagesList.innerHTML = '<div class="text-center py-5"><i class="fas fa-filter fa-3x text-muted mb-3"></i><h5>No messages match your filters</h5><p class="text-muted">Try adjusting your search or filter settings.</p></div>';
+                }
                 return;
             }
             
-            messagesList.innerHTML = '';
+            console.log('✅ Rendering', filteredMessages.length, 'messages');
+            if (emptyState) emptyState.style.display = 'none';
             messagesList.style.display = 'block';
+            messagesList.innerHTML = '';
             
-            messages.forEach(message => {
+            filteredMessages.forEach((message, index) => {
+                console.log(`📝 Rendering message ${index + 1}:`, message.title);
                 const messageDiv = createMessageElement(message);
                 messagesList.appendChild(messageDiv);
             });
             
+            console.log('✅ All messages rendered successfully');
             animateMessages();
         }
         
         // Create message element
         function createMessageElement(message) {
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message-item priority-${message.priority.toLowerCase()} ${message.type}`;
+            const isUnread = !message.read && message.type === 'received';
+            const isStarred = starredMessageIds.has(message.id);
+            
+            messageDiv.className = `message-item priority-${message.priority.toLowerCase()} ${message.type} ${isUnread ? 'unread' : ''} ${isStarred ? 'starred' : ''}`;
             messageDiv.setAttribute('data-message-id', message.id);
             
             const timeAgo = getTimeAgo(new Date(message.timestamp));
-            const categoryEmoji = getCategoryEmoji(message.category);
-            const typeIcon = message.type === 'sent' ? '📤' : '📥';
+            const categoryIcon = getCategoryIcon(message.category);
+            const typeIcon = message.type === 'sent' ? '<i class="fas fa-paper-plane"></i>' : '<i class="fas fa-inbox"></i>';
+            
+            // Truncate content for preview
+            const contentPreview = message.content.length > 150 ? message.content.substring(0, 150) + '...' : message.content;
             
             messageDiv.innerHTML = `
                 <div class="message-header">
-                    <h6 class="message-title">${typeIcon} ${categoryEmoji} ${escapeHtml(message.title)}</h6>
+                    <div class="d-flex align-items-center gap-2 flex-grow-1">
+                        ${isUnread ? '<span class="unread-indicator" title="Unread"></span>' : ''}
+                        <h6 class="message-title mb-0">${typeIcon} ${categoryIcon} ${escapeHtml(message.title)}</h6>
+                    </div>
                     <span class="message-priority priority-${message.priority.toLowerCase()}">${message.priority}</span>
                 </div>
-                <div class="message-content">${escapeHtml(message.content)}</div>
+                <div class="message-content">${escapeHtml(contentPreview)}</div>
+                ${message.tags && message.tags.length > 0 ? `
+                    <div class="message-tags">
+                        ${message.tags.map(tag => `<span class="message-tag"><i class="fas fa-hashtag"></i>${escapeHtml(tag)}</span>`).join('')}
+                    </div>
+                ` : ''}
                 <div class="message-meta">
                     <div class="message-author">
                         <i class="fas fa-user"></i>
-                        <span>${message.type === 'sent' ? 'You' : message.authorName}</span>
+                        <span>${message.type === 'sent' ? 'You' : escapeHtml(message.authorName)}</span>
                     </div>
                     <div class="message-time">
                         <i class="fas fa-clock"></i>
                         <span>${timeAgo}</span>
                     </div>
+                    ${message.replyCount > 0 ? `
+                        <div class="message-replies">
+                            <i class="fas fa-comments"></i>
+                            <span>${message.replyCount} ${message.replyCount === 1 ? 'reply' : 'replies'}</span>
+                        </div>
+                    ` : ''}
                     <div class="message-actions">
                         <button class="message-action" onclick="viewMessage('${message.id}')" title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
+                        ${message.type === 'received' ? `
+                            <button class="message-action ${isUnread ? '' : 'text-muted'}" onclick="toggleRead('${message.id}')" title="${isUnread ? 'Mark as Read' : 'Mark as Unread'}">
+                                <i class="fas fa-envelope${isUnread ? '-open' : ''}"></i>
+                            </button>
+                        ` : ''}
                         <button class="message-action" onclick="replyToMessage('${message.id}')" title="Reply">
                             <i class="fas fa-reply"></i>
                         </button>
-                        <button class="message-action" onclick="toggleStar('${message.id}')" title="Star">
-                            <i class="far fa-star"></i>
+                        <button class="message-action ${isStarred ? 'starred' : ''}" onclick="toggleStar('${message.id}')" title="${isStarred ? 'Unstar' : 'Star'}">
+                            <i class="fa${isStarred ? 's' : 'r'} fa-star"></i>
                         </button>
-                        <button class="message-action" onclick="deleteMessage('${message.id}')" title="Delete">
+                        <button class="message-action text-danger" onclick="deleteMessage('${message.id}')" title="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
             `;
+            
+            // Make entire card clickable to view
+            messageDiv.style.cursor = 'pointer';
+            messageDiv.addEventListener('click', function(e) {
+                // Don't trigger if clicking on action buttons
+                if (!e.target.closest('.message-action')) {
+                    viewMessage(message.id);
+                }
+            });
             
             return messageDiv;
         }
@@ -472,27 +745,55 @@
             const message = messages.find(m => m.id === messageId);
             if (!message) return;
             
+            currentMessageId = messageId;
+            
+            // Mark as read if unread
+            if (!message.read && message.type === 'received') {
+                await markAsRead(messageId);
+            }
+            
             const modal = document.getElementById('messageDetailsModal');
             const body = document.getElementById('messageDetailsBody');
             
             const timeAgo = getTimeAgo(new Date(message.timestamp));
-            const categoryEmoji = getCategoryEmoji(message.category);
+            const categoryIcon = getCategoryIcon(message.category);
+            const isStarred = starredMessageIds.has(message.id);
             
             body.innerHTML = `
                 <div class="message-details">
                     <div class="message-detail-header">
-                        <h4>${categoryEmoji} ${escapeHtml(message.title)}</h4>
-                        <span class="badge bg-${getPriorityColor(message.priority)}">${message.priority} Priority</span>
+                        <h4>${categoryIcon} ${escapeHtml(message.title)}</h4>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-${getPriorityColor(message.priority)}">${message.priority} Priority</span>
+                            ${isStarred ? '<span class="badge bg-warning"><i class="fas fa-star"></i> Starred</span>' : ''}
+                        </div>
                     </div>
                     <div class="message-detail-meta">
-                        <div><strong>From:</strong> ${message.authorName} (${message.authorEmail})</div>
+                        <div><strong>From:</strong> ${escapeHtml(message.authorName)} (${escapeHtml(message.authorEmail)})</div>
                         <div><strong>Category:</strong> ${message.category}</div>
                         <div><strong>Sent:</strong> ${timeAgo}</div>
+                        ${message.tags && message.tags.length > 0 ? `
+                            <div><strong>Tags:</strong> ${message.tags.map(tag => `<span class="badge bg-secondary">${escapeHtml(tag)}</span>`).join(' ')}</div>
+                        ` : ''}
                     </div>
                     <div class="message-detail-content">
                         <h6>Message:</h6>
-                        <p>${escapeHtml(message.content)}</p>
+                        <p style="white-space: pre-wrap;">${escapeHtml(message.content)}</p>
                     </div>
+                    ${message.replies && message.replies.length > 0 ? `
+                        <div class="message-replies-section">
+                            <h6><i class="fas fa-comments"></i> Replies (${message.replies.length})</h6>
+                            ${message.replies.map(reply => `
+                                <div class="reply-item">
+                                    <div class="reply-header">
+                                        <strong>${escapeHtml(reply.authorName)}</strong>
+                                        <span class="text-muted">${getTimeAgo(new Date(reply.timestamp))}</span>
+                                    </div>
+                                    <p>${escapeHtml(reply.content)}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
                 </div>
             `;
             
@@ -501,25 +802,84 @@
         }
         
         async function replyToMessage(messageId) {
-            const message = messages.find(m => m.id === messageId);
+            if (messageId) {
+                currentMessageId = messageId;
+            }
+            
+            const message = messages.find(m => m.id === (messageId || currentMessageId));
             if (!message) return;
+            
+            // Close modal if open
+            const modal = bootstrap.Modal.getInstance(document.getElementById('messageDetailsModal'));
+            if (modal) modal.hide();
             
             // Pre-fill form with reply
             document.getElementById('MessageTitle').value = `Re: ${message.title}`;
-            document.getElementById('MessageContent').value = `\n\n--- Original Message ---\n${message.content}`;
+            document.getElementById('MessageContent').value = `\n\n--- Original Message ---\nFrom: ${message.authorName}\nDate: ${new Date(message.timestamp).toLocaleString()}\n\n${message.content}`;
             document.getElementById('Priority').value = message.priority;
             document.getElementById('Category').value = message.category;
             
             // Focus on message content
-            document.getElementById('MessageContent').focus();
-            document.getElementById('MessageContent').setSelectionRange(0, 0);
+            const contentField = document.getElementById('MessageContent');
+            contentField.focus();
+            contentField.setSelectionRange(0, 0);
+            
+            // Scroll to form
+            document.querySelector('.compose-card').scrollIntoView({ behavior: 'smooth' });
             
             showNotification('📝 Reply template loaded', 'info');
         }
         
-        function toggleStar(messageId) {
-            // In a real app, this would update the database
-            showNotification('⭐ Star feature coming soon!', 'info');
+        async function toggleStar(messageId) {
+            if (starredMessageIds.has(messageId)) {
+                starredMessageIds.delete(messageId);
+                showNotification('⭐ Message unstarred', 'info');
+            } else {
+                starredMessageIds.add(messageId);
+                showNotification('⭐ Message starred', 'success');
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('starredMessages', JSON.stringify(Array.from(starredMessageIds)));
+            
+            // Re-render messages
+            applyFilters();
+        }
+        
+        async function toggleRead(messageId) {
+            const message = messages.find(m => m.id === messageId);
+            if (!message) return;
+            
+            const newReadStatus = !message.read;
+            
+            try {
+                await db.collection('messages').doc(messageId).update({
+                    read: newReadStatus
+                });
+                
+                message.read = newReadStatus;
+                showNotification(newReadStatus ? '✅ Marked as read' : '📬 Marked as unread', 'info');
+                
+                // Messages will auto-update via real-time listener
+                
+            } catch (error) {
+                console.error('Error toggling read status:', error);
+                showNotification('❌ Error updating message', 'error');
+            }
+        }
+        
+        async function markAsRead(messageId) {
+            try {
+                await db.collection('messages').doc(messageId).update({
+                    read: true
+                });
+                
+                const message = messages.find(m => m.id === messageId);
+                if (message) message.read = true;
+                
+            } catch (error) {
+                console.error('Error marking as read:', error);
+            }
         }
         
         async function deleteMessage(messageId) {
@@ -533,28 +893,37 @@
             try {
                 await db.collection('messages').doc(messageId).delete();
                 showNotification('🗑️ Message deleted successfully!', 'success');
-                await loadMessagesFromFirebase();
+                
+                // Messages will auto-update via real-time listener
+                
             } catch (error) {
                 console.error('Error deleting message:', error);
                 showNotification('❌ Error deleting message', 'error');
             }
         }
         
-        // Setup message actions
-        function setupMessageActions() {
-            // Actions are handled by onclick attributes in the HTML
-            console.log('✅ Message actions setup complete');
+        // Load starred messages
+        function loadStarredMessages() {
+            const starred = localStorage.getItem('starredMessages');
+            if (starred) {
+                try {
+                    const starredArray = JSON.parse(starred);
+                    starredMessageIds = new Set(starredArray);
+                } catch (error) {
+                    console.error('Error loading starred messages:', error);
+                }
+            }
         }
         
         // Utility functions
-        function getCategoryEmoji(category) {
-            const emojis = {
-                'announcement': '📢',
-                'meeting': '🤝',
-                'project': '📊',
-                'general': '💬'
+        function getCategoryIcon(category) {
+            const icons = {
+                'announcement': '<i class="fas fa-bullhorn"></i>',
+                'meeting': '<i class="fas fa-handshake"></i>',
+                'project': '<i class="fas fa-chart-bar"></i>',
+                'general': '<i class="fas fa-comment"></i>'
             };
-            return emojis[category] || '💬';
+            return icons[category] || '<i class="fas fa-comment"></i>';
         }
         
         function getPriorityColor(priority) {
@@ -568,9 +937,11 @@
         
         function getTimeAgo(date) {
             const now = new Date();
-            const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+            const diffInSeconds = Math.floor((now - date) / 1000);
             
-            if (diffInMinutes < 1) return 'Just now';
+            if (diffInSeconds < 60) return 'Just now';
+            
+            const diffInMinutes = Math.floor(diffInSeconds / 60);
             if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
             
             const diffInHours = Math.floor(diffInMinutes / 60);
@@ -578,6 +949,11 @@
             
             const diffInDays = Math.floor(diffInHours / 24);
             if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+            
+            if (diffInDays < 30) {
+                const weeks = Math.floor(diffInDays / 7);
+                return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+            }
             
             return date.toLocaleDateString();
         }
@@ -626,6 +1002,7 @@
         // Focus message form
         function focusMessageForm() {
             document.getElementById('MessageTitle').focus();
+            document.querySelector('.compose-card').scrollIntoView({ behavior: 'smooth' });
         }
         
         // Refresh messages
@@ -658,7 +1035,7 @@
                     item.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
                     item.style.opacity = '1';
                     item.style.transform = 'translateY(0)';
-                }, index * 100);
+                }, index * 50);
             });
         }
         
@@ -701,6 +1078,13 @@
             }, 3000);
         }
         
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (messagesListener) {
+                messagesListener();
+            }
+        });
+        
         // Initialize everything when Firebase is ready
         waitForMessagesFirebase(function() {
             console.log('✅ Firebase ready for messages');
@@ -710,4 +1094,4 @@
         
         console.log('💬 Messages script loaded');
     </script>
-}
+}@* email *@

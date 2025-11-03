@@ -336,10 +336,35 @@
         
         // Get form data
         const formData = new FormData(form);
-        const userName = projectsCurrentUser.displayName || (projectsCurrentUser.email ? projectsCurrentUser.email.split('@')[0] : 'User');
         
-        // Clean name extraction (remove domain from email)
-        const cleanUserName = userName.includes('@') ? userName.split('@')[0] : userName;
+        // IMPROVED: Better user name extraction with multiple fallbacks
+        let userName = 'User';
+        
+        if (projectsCurrentUser.displayName && projectsCurrentUser.displayName.trim()) {
+            // User has a display name set
+            userName = projectsCurrentUser.displayName.trim();
+        } else if (projectsCurrentUser.email) {
+            // Extract name from email (before @)
+            const emailParts = projectsCurrentUser.email.split('@');
+            if (emailParts[0] && emailParts[0].trim()) {
+                userName = emailParts[0].trim();
+                
+                // Capitalize first letter if it's lowercase
+                userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+                
+                // Replace dots and underscores with spaces for better readability
+                userName = userName.replace(/[._]/g, ' ');
+            }
+        }
+        
+        // Clean name - remove domain if somehow it's still there
+        if (userName.includes('@')) {
+            userName = userName.split('@')[0];
+        }
+        
+        console.log('?? Author name resolved to:', userName);
+        console.log('?? User email:', projectsCurrentUser.email);
+        console.log('?? User displayName:', projectsCurrentUser.displayName);
         
         const projectData = {
             name: formData.get('Name') || '',
@@ -349,8 +374,8 @@
             priority: formData.get('Priority') || 'Medium',
             progress: parseInt(formData.get('Progress')) || 0,
             userId: projectsCurrentUser.uid,
-            authorName: cleanUserName,
-            authorEmail: projectsCurrentUser.email,
+            authorName: userName,
+            authorEmail: projectsCurrentUser.email || 'unknown@example.com',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -389,7 +414,7 @@
                     action: 'created',
                     status: projectData.status,
                     name: projectData.name,
-                    authorName: cleanUserName,
+                    authorName: userName,
                     timestamp: new Date().toISOString()
                 }
             });
@@ -845,10 +870,10 @@
         const isOwner = projectsCurrentUser && project.userId === projectsCurrentUser.uid;
         const authorName = project.authorName || project.authorEmail || 'Unknown User';
         
-        // FIXED: Remove question marks from author badges
+        // FIXED: Remove all emojis and question marks from badges
         const authorBadge = isOwner 
-            ? '<span class="author-badge owner">?? You</span>' 
-            : '<span class="author-badge">?? ' + escapeHtml(authorName) + '</span>';
+            ? '<span class="author-badge owner">You</span>' 
+            : '<span class="author-badge">' + escapeHtml(authorName) + '</span>';
         
         const priorityIcon = project.priority === 'High' ? '<i class="fas fa-exclamation-triangle priority-indicator" title="High Priority"></i>' : '';
         const overdueClass = isOverdue ? 'overdue' : '';
@@ -868,6 +893,10 @@
             '<i class="fas fa-users"></i>' +
             '</button>';
         
+        // FIXED: Ensure progress is a number and has a valid width
+        const progressValue = parseInt(project.progress) || 0;
+        const progressWidth = Math.max(0, Math.min(100, progressValue));
+        
         card.innerHTML = '<div class="project-header">' +
             '<h3 class="project-title">' + escapeHtml(project.name) + '</h3>' +
             '<div class="project-header-badges">' + priorityIcon + '</div>' +
@@ -884,10 +913,10 @@
             '<div class="progress-section">' +
             '<div class="progress-header">' +
             '<span class="progress-label">Progress</span>' +
-            '<span class="progress-percentage">' + project.progress + '%</span>' +
+            '<span class="progress-percentage">' + progressValue + '%</span>' +
             '</div>' +
             '<div class="progress-bar-container">' +
-            '<div class="progress-bar-fill ' + progressClass + '" style="width: ' + project.progress + '%"></div>' +
+            '<div class="progress-bar ' + progressClass + '" style="width: ' + progressWidth + '%"></div>' +
             '</div>' +
             '</div>' +
             '<div class="project-actions">' +
