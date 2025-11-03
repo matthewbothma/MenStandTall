@@ -399,6 +399,19 @@
                 editable: true,
                 dayMaxEvents: true,
                 height: 'auto',
+                // Add time format configuration for proper AM/PM display
+                eventTimeFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    meridiem: 'short',
+                    hour12: true
+                },
+                slotLabelFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    meridiem: 'short',
+                    hour12: true
+                },
                 events: events.map(event => {
                     const isMyEvent = event.userId === currentUser.uid;
                     var atSymbol = String.fromCharCode(64);

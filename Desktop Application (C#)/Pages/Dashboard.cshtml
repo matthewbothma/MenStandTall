@@ -140,85 +140,99 @@
 <!-- Activity Feed -->
 <div class="activity-feed">
     <div class="activity-card">
-        <h3 class="chart-title mb-3">Recent Activity</h3>
-        <div id="recent-activities">
-            @if (Model.RecentActivities.Any())
-            {
-                @foreach (var activity in Model.RecentActivities)
+        <div class="activity-card-header">
+            <h3 class="chart-title mb-0">Recent Activity</h3>
+            <button class="btn-collapse" onclick="toggleActivityCollapse()" id="activityCollapseBtn" title="Toggle Activity">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+        </div>
+        <div id="recent-activities-wrapper" class="activity-content-wrapper">
+            <div id="recent-activities">
+                @if (Model.RecentActivities.Any())
                 {
-                    <div class="activity-item">
-                        <div class="activity-icon" style="background: @activity.BackgroundColor; color: white;">
-                            <i class="@activity.Icon"></i>
+                    @foreach (var activity in Model.RecentActivities)
+                    {
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background: @activity.BackgroundColor; color: white;">
+                                <i class="@activity.Icon"></i>
+                            </div>
+                            <div class="activity-content">
+                                <h6>@activity.Title</h6>
+                                <p>@activity.Description</p>
+                                <span class="activity-time">@activity.TimeAgo</span>
+                            </div>
                         </div>
-                        <div class="activity-content">
-                            <h6>@activity.Title</h6>
-                            <p>@activity.Description</p>
-                            <span class="activity-time">@activity.TimeAgo</span>
+                    }
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-history"></i>
                         </div>
+                        <h5>No Recent Activity</h5>
+                        <p>Your recent activities will appear here as you use the system.</p>
+                        <button class="btn-modern btn-primary" onclick="goToProjects()">
+                            <i class="fas fa-plus"></i> Start Your First Project
+                        </button>
                     </div>
                 }
-            }
-            else
-            {
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-history"></i>
-                    </div>
-                    <h5>No Recent Activity</h5>
-                    <p>Your recent activities will appear here as you use the system.</p>
-                    <button class="btn-modern btn-primary" onclick="goToProjects()">
-                        <i class="fas fa-plus"></i> Start Your First Project
-                    </button>
-                </div>
-            }
+            </div>
         </div>
     </div>
     
     <!-- Calendar Widget -->
     <div class="activity-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="activity-card-header">
             <h3 class="chart-title mb-0">Calendar</h3>
-            <button class="btn-modern btn-sm" onclick="goToCalendar()">
-                <i class="fas fa-external-link-alt"></i> Full View
-            </button>
-        </div>
-        <div id="dashboard-calendar">
-            <div class="calendar-mini">
-                <div class="calendar-header">
-                    <button class="calendar-nav" onclick="previousMonth()" title="Previous Month">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <span class="calendar-title" id="calendarTitle">January 2024</span>
-                    <button class="calendar-nav" onclick="nextMonth()" title="Next Month">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
-                <div class="calendar-grid">
-                    <div class="calendar-weekdays">
-                        <div class="weekday">S</div>
-                        <div class="weekday">M</div>
-                        <div class="weekday">T</div>
-                        <div class="weekday">W</div>
-                        <div class="weekday">T</div>
-                        <div class="weekday">F</div>
-                        <div class="weekday">S</div>
-                    </div>
-                    <div class="calendar-days" id="calendarDays">
-                        <!-- Calendar days will be generated by JavaScript -->
-                    </div>
-                </div>
+            <div class="d-flex gap-2">
+                <button class="btn-modern btn-sm" onclick="goToCalendar()" style="padding: 0.5rem 0.875rem; font-size: 0.8rem;">
+                    <i class="fas fa-external-link-alt"></i> Full View
+                </button>
+                <button class="btn-collapse" onclick="toggleCalendarCollapse()" id="calendarCollapseBtn" title="Toggle Calendar">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
             </div>
-            <div class="calendar-events" id="calendarEvents" onclick="goToCalendar()">
-                <h6>Upcoming Events</h6>
-                <div class="events-list" id="eventsList">
-                    <div class="empty-events" id="emptyEventsMessage">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Loading events...</span>
+        </div>
+        <div id="calendar-wrapper" class="calendar-content-wrapper">
+            <div id="dashboard-calendar">
+                <div class="calendar-mini">
+                    <div class="calendar-header">
+                        <button class="calendar-nav" onclick="previousMonth()" title="Previous Month">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span class="calendar-title" id="calendarTitle">January 2024</span>
+                        <button class="calendar-nav" onclick="nextMonth()" title="Next Month">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="calendar-weekdays">
+                            <div class="weekday">S</div>
+                            <div class="weekday">M</div>
+                            <div class="weekday">T</div>
+                            <div class="weekday">W</div>
+                            <div class="weekday">T</div>
+                            <div class="weekday">F</div>
+                            <div class="weekday">S</div>
+                        </div>
+                        <div class="calendar-days" id="calendarDays">
+                            <!-- Calendar days will be generated by JavaScript -->
+                        </div>
                     </div>
                 </div>
-                <div class="calendar-footer-hint">
-                    <i class="fas fa-external-link-alt"></i>
-                    <span>Click to view full calendar</span>
+                <div class="calendar-events" id="calendarEvents" onclick="goToCalendar()">
+                    <h6>Upcoming Events</h6>
+                    <div class="events-list" id="eventsList">
+                        <div class="empty-events" id="emptyEventsMessage">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>Loading events...</span>
+                        </div>
+                    </div>
+                    <div class="calendar-footer-hint">
+                        <i class="fas fa-external-link-alt"></i>
+                        <span>Click to view full calendar</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -699,7 +713,7 @@
                     timeText = eventDate.toLocaleDateString();
                 }
                 
-                const eventTime = eventDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const eventTime = eventDate.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: true});
                 
                 // Add visual indicator for my events vs team events
                 const eventClass = isMyEvent ? 'my-event' : 'team-event';
@@ -1784,10 +1798,100 @@
             }
         }
         
+        // Toggle Recent Activity Collapse
+        function toggleActivityCollapse() {
+            const wrapper = document.getElementById('recent-activities-wrapper');
+            const btn = document.getElementById('activityCollapseBtn');
+            const icon = btn.querySelector('i');
+            
+            if (wrapper.classList.contains('collapsed')) {
+                // Expand
+                wrapper.classList.remove('collapsed');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                wrapper.style.maxHeight = wrapper.scrollHeight + 'px';
+                
+                // Store preference
+                localStorage.setItem('activityCollapsed', 'false');
+            } else {
+                // Collapse
+                wrapper.classList.add('collapsed');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                wrapper.style.maxHeight = '0px';
+                
+                // Store preference
+                localStorage.setItem('activityCollapsed', 'true');
+            }
+        }
+        
+        // Toggle Calendar Collapse
+        function toggleCalendarCollapse() {
+            const wrapper = document.getElementById('calendar-wrapper');
+            const btn = document.getElementById('calendarCollapseBtn');
+            const icon = btn.querySelector('i');
+            
+            if (wrapper.classList.contains('collapsed')) {
+                // Expand
+                wrapper.classList.remove('collapsed');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                wrapper.style.maxHeight = wrapper.scrollHeight + 'px';
+                
+                // Store preference
+                localStorage.setItem('calendarCollapsed', 'false');
+            } else {
+                // Collapse
+                wrapper.classList.add('collapsed');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                wrapper.style.maxHeight = '0px';
+                
+                // Store preference
+                localStorage.setItem('calendarCollapsed', 'true');
+            }
+        }
+        
+        // Load collapse state on page load
+        function loadActivityCollapseState() {
+            const isCollapsed = localStorage.getItem('activityCollapsed') === 'true';
+            if (isCollapsed) {
+                const wrapper = document.getElementById('recent-activities-wrapper');
+                const btn = document.getElementById('activityCollapseBtn');
+                const icon = btn.querySelector('i');
+                
+                if (wrapper && btn && icon) {
+                    wrapper.classList.add('collapsed');
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                    wrapper.style.maxHeight = '0px';
+                }
+            }
+        }
+        
+        // Load calendar collapse state
+        function loadCalendarCollapseState() {
+            const isCollapsed = localStorage.getItem('calendarCollapsed') === 'true';
+            if (isCollapsed) {
+                const wrapper = document.getElementById('calendar-wrapper');
+                const btn = document.getElementById('calendarCollapseBtn');
+                const icon = btn.querySelector('i');
+                
+                if (wrapper && btn && icon) {
+                    wrapper.classList.add('collapsed');
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                    wrapper.style.maxHeight = '0px';
+                }
+            }
+        }
+        
         // Initialize everything when Firebase is ready
         waitForDashboardFirebase(function() {
             console.log('✅ Firebase ready for dashboard');
             setupDashboard();
+            loadActivityCollapseState(); // Load collapse state
+            loadCalendarCollapseState(); // Load calendar collapse state
             console.log('✅ Dashboard setup complete');
         });
         
