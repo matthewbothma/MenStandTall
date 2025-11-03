@@ -50,7 +50,17 @@ class TasksFragment : Fragment() {
             onStatusChange = { task, newStatus ->
                 lifecycleScope.launch {
                     val result = viewModel.updateTaskStatus(task, newStatus)
-                    result.onFailure { Toast.makeText(requireContext(), "Failed to update status", Toast.LENGTH_SHORT).show() }
+                    result.onFailure {
+                        Toast.makeText(requireContext(), "Failed to update status", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            onDeleteTask = { task ->
+                lifecycleScope.launch {
+                    val result = viewModel.deleteTask(task)
+                    result.onFailure {
+                        Toast.makeText(requireContext(), "Failed to delete task", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         )
@@ -84,5 +94,6 @@ class TasksFragment : Fragment() {
         _binding = null
     }
 }
+
 
 

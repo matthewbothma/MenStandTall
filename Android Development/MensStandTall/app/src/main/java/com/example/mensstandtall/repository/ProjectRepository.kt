@@ -52,7 +52,6 @@ class ProjectRepository {
         }
     }
 
-    // ✅ Update existing project
     suspend fun updateProject(projectId: String, updates: Map<String, Any>): Result<Unit> {
         return try {
             val updatedMap = updates.toMutableMap()

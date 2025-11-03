@@ -8,8 +8,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.example.mensstandtall.R
 import androidx.navigation.fragment.findNavController
+import com.example.mensstandtall.R
 import com.example.mensstandtall.databinding.FragmentDashboardBinding
 import com.example.mensstandtall.repository.AuthRepository
 import com.github.mikephil.charting.data.PieData
@@ -72,7 +72,7 @@ class DashboardFragment : Fragment() {
                 binding.tvActiveProjects.text = stats.activeProjects.toString()
                 binding.tvCompletedTasks.text = stats.completedTasks.toString()
                 binding.tvTeamMembers.text = stats.teamMembers.toString()
-                binding.tvUpcomingEvents.text = stats.upcomingEvents.toString()
+                binding.tvUpcomingEvents.text = stats.upcomingProjects.toString() // updated
 
                 updateTaskDistributionChart(stats)
             }
@@ -99,7 +99,8 @@ class DashboardFragment : Fragment() {
     private fun updateTaskDistributionChart(stats: DashboardStats) {
         val entries = mutableListOf<PieEntry>()
 
-        if (stats.completedTasksCount + stats.inProgressTasksCount + stats.todoTasksCount == 0) {
+        val total = stats.completedTasksCount + stats.inProgressTasksCount + stats.todoTasksCount
+        if (total == 0) {
             binding.pieChart.clear()
             return
         }
@@ -134,4 +135,5 @@ class DashboardFragment : Fragment() {
         _binding = null
     }
 }
+
 

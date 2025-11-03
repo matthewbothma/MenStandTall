@@ -92,9 +92,7 @@
             android:id="@+id/ivMenu"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true"
-            android:layout_marginLeft="350dp"
+            android:layout_gravity="end|top"
             android:contentDescription="Menu"
             android:src="@drawable/ic_more_vert"
             android:visibility="visible" />

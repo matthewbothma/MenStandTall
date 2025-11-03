@@ -193,6 +193,14 @@
                     android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn123Project"
+            android:layout_width="0dp"
+            android:layout_height="70dp"
+            android:backgroundTint="#FF8C69"
+            android:text="New Project"
+            app:icon="@drawable/ic_add"
+            app:iconGravity="textStart" />
     </LinearLayout>
 </ScrollView>
 
