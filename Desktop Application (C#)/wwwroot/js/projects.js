@@ -1061,7 +1061,7 @@
         // Re-render all projects
         renderProjects();
         
-        showProjectNotification('? Filters cleared!', 'info');
+        // REMOVED: Notification when clearing filters
         console.log('FILTER: Filters cleared successfully');
     };
     
@@ -1083,7 +1083,7 @@
             loadProjectsFromFirebase();
         }
         
-        showProjectNotification('?? Refreshing projects...', 'info');
+        console.log('REFRESH: Refresh completed');
     };
 
 
@@ -1093,3 +1093,88 @@
     console.log('PROJECTS: Company Projects script loaded');
 
 })();
+
+// ADDED: Validate project form function - MOVED INSIDE CLOSURE
+function validateProjectForm(form) {
+    console.log('VALIDATE: Validating project form...');
+    
+    if (!form) {
+        console.error('ERROR: Form not provided for validation');
+        return false;
+    }
+    
+    let isValid = true;
+    const requiredFields = form.querySelectorAll('input[required], textarea[required], select[required]');
+    
+    requiredFields.forEach(function(field) {
+        const value = field.value.trim();
+        
+        // Clear previous validation state
+        field.classList.remove('is-invalid');
+        const existingError = field.parentElement.querySelector('.invalid-feedback');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // Check if field is empty
+        if (!value || value.length === 0) {
+            isValid = false;
+            field.classList.add('is-invalid');
+            
+            // Add error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback d-block';
+            errorDiv.textContent = 'This field is required';
+            field.parentElement.appendChild(errorDiv);
+            
+            console.log('VALIDATE: Field validation failed:', field.name || field.id);
+        }
+    });
+    
+    // Additional validation for specific fields
+    const deadlineField = form.querySelector('input[type="date"]');
+    if (deadlineField && deadlineField.value) {
+        const deadline = new Date(deadlineField.value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (deadline < today) {
+            isValid = false;
+            deadlineField.classList.add('is-invalid');
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback d-block';
+            errorDiv.textContent = 'Deadline cannot be in the past';
+            deadlineField.parentElement.appendChild(errorDiv);
+            
+            console.log('VALIDATE: Deadline validation failed - date is in the past');
+        }
+    }
+    
+    // Validate progress field
+    const progressField = form.querySelector('input[name="Progress"]');
+    if (progressField) {
+        const progressValue = parseInt(progressField.value);
+        
+        if (isNaN(progressValue) || progressValue < 0 || progressValue > 100) {
+            isValid = false;
+            progressField.classList.add('is-invalid');
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback d-block';
+            errorDiv.textContent = 'Progress must be between 0 and 100';
+            progressField.parentElement.appendChild(errorDiv);
+            
+            console.log('VALIDATE: Progress validation failed - value out of range');
+        }
+    }
+    
+    if (!isValid) {
+        showProjectNotification('?? Please fill in all required fields correctly', 'warning');
+        console.log('VALIDATE: Form validation failed');
+    } else {
+        console.log('VALIDATE: Form validation passed');
+    }
+    
+    return isValid;
+}
