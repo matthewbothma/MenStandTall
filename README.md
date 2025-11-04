@@ -51,3 +51,8 @@
 - Cross platform
 - Dashboard overview
 
+## Acknowledgment of Tooling (AI & Automation)
+
+I used GitHub Copilot and GitHub Actions (actions bot) to assist with repository hygiene tasks, specifically moving CI workflow files into the correct `.github/workflows` folder and refining YAML syntax. All changes were reviewed and approved by me(Matthew Bothma). These tools were used as productivity aids; design decisions, implementation, and accountability for the code remain mine(Matthew Bothma). 
+
+If this work is subject to academic or organizational integrity policies, this disclosure is intended to be transparent about tool usage. Please note that some commit messages may reference automated actions (e.g., Actions bot).
