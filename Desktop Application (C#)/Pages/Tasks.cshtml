@@ -268,31 +268,42 @@
             }
         }
         
-        // Load tasks from Firestore
+        // Load tasks from Firestore - ENHANCED for team collaboration
         async function loadTasksFromFirestore() {
             if (!tasksDB || !tasksCurrentUser) return;
             
             try {
-                console.log('📝 Loading tasks from Firestore...');
+                console.log('TASKS: Loading tasks from Firestore...');
                 
-                const tasksSnapshot = await tasksDB.collection('tasks')
-                    .where('uid', '==', tasksCurrentUser.uid)
-                    .get();
+                // CHANGED: Load ALL company tasks for team collaboration (not just user-specific)
+                let tasksSnapshot;
+                try {
+                    console.log('TASKS: Attempting to load all company tasks...');
+                    tasksSnapshot = await tasksDB.collection('tasks').get();
+                    console.log('TASKS: Successfully loaded all company tasks');
+                } catch (permissionError) {
+                    console.log('TASKS: Company-wide access denied, loading user tasks only:', permissionError.message);
+                    // Fallback to user-specific tasks if permissions don't allow
+                    tasksSnapshot = await tasksDB.collection('tasks')
+                        .where('uid', '==', tasksCurrentUser.uid)
+                        .get();
+                    console.log('TASKS: Loaded user tasks only as fallback');
+                }
                 
                 tasks = tasksSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
                 
-                console.log('✅ Tasks loaded:', tasks.length);
-                console.log('📊 Task statuses:', tasks.map(t => ({ name: t.name, status: t.status })));
+                console.log('TASKS: Tasks loaded:', tasks.length);
+                console.log('TASKS: Task statuses:', tasks.map(t => ({ name: t.name, status: t.status })));
                 
                 renderTasksUI();
                 updateTaskCounts();
                 
             } catch (error) {
-                console.error('❌ Error loading tasks:', error);
-                showTaskNotification('❌ Error loading tasks', 'error');
+                console.error('ERROR: Error loading tasks:', error);
+                showTaskNotification('ERROR: Error loading tasks', 'error');
             }
         }
         
@@ -345,16 +356,13 @@
                         });
                         
                         console.log(`✅ Loaded ${projects.length} projects for task assignment`);
-                        showTaskNotification(`📋 ${projects.length} projects available for task assignment`, 'info');
                     } else {
                         console.log('ℹ️ No active projects available for task assignment');
-                        showTaskNotification('ℹ️ No active projects found. Create a project first to assign tasks.', 'warning');
                     }
                 }
                 
             } catch (error) {
                 console.error('❌ Error loading projects for tasks:', error);
-                showTaskNotification('❌ Error loading projects', 'error');
             }
         }
         

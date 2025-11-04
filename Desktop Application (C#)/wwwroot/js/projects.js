@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     
-    console.log('?? Company Projects script starting...');
+    console.log('PROJECTS: Company Projects script starting...');
 
     let projectsCurrentUser = null;
     let projectsList = [];
@@ -11,7 +11,7 @@
     
     // Show project notification - MOVED TO TOP for immediate availability
     function showProjectNotification(message, type = 'info') {
-        console.log('?? showProjectNotification called:', message, type);
+        console.log('NOTIFY: showProjectNotification called:', message, type);
         
         const notification = document.createElement('div');
         notification.style.cssText = `
@@ -49,7 +49,7 @@
             }, 300);
         }, 3000);
         
-        console.log('? Notification displayed successfully');
+        console.log('NOTIFY: Notification displayed successfully');
     }
     
     // Make showProjectNotification available globally immediately
@@ -57,12 +57,12 @@
 
     // Test function to verify notification works - ADDED FOR TESTING
     window.testProjectNotification = function() {
-        console.log('?? Testing project notification function...');
+        console.log('TEST: Testing project notification function...');
         if (typeof window.showProjectNotification === 'function') {
-            window.showProjectNotification('? Project notification system is working!', 'success');
-            console.log('? Test notification called successfully');
+            window.showProjectNotification('SUCCESS: Project notification system is working!', 'success');
+            console.log('TEST: Test notification called successfully');
         } else {
-            console.error('? showProjectNotification is not available');
+            console.error('ERROR: showProjectNotification is not available');
         }
     };
     
@@ -77,25 +77,25 @@
 
     // Firebase ready check
     function waitForProjectsFirebase(callback) {
-        console.log('?? Waiting for Firebase...');
+        console.log('FIREBASE: Waiting for Firebase...');
         
         let attempts = 0;
         const maxAttempts = 100;
         
         function checkFirebase() {
             attempts++;
-            console.log('?? Firebase check attempt ' + attempts + '/' + maxAttempts);
+            console.log('FIREBASE: Firebase check attempt ' + attempts + '/' + maxAttempts);
             
             if (window.firebaseAuth && window.firebaseDB) {
-                console.log('? Firebase ready for company projects');
+                console.log('FIREBASE: Firebase ready for company projects');
                 projectsFirebaseReady = true;
                 callback();
                 return;
             }
             
             if (attempts >= maxAttempts) {
-                console.error('? Firebase failed to initialize');
-                showProjectNotification('? Firebase connection failed. Please refresh the page.', 'error');
+                console.error('ERROR: Firebase failed to initialize');
+                showProjectNotification('ERROR: Firebase connection failed. Please refresh the page.', 'error');
                 callback();
                 return;
             }
@@ -109,10 +109,10 @@
     // Initialize everything when both Firebase and DOM are ready
     function initializeProjects() {
         waitForDOM(function() {
-            console.log('? DOM is ready for projects');
+            console.log('DOM: DOM is ready for projects');
             
             waitForProjectsFirebase(function() {
-                console.log('? Firebase ready for company projects');
+                console.log('FIREBASE: Firebase ready for company projects');
                 
                 // Verify essential DOM elements exist
                 const requiredElements = [
@@ -130,44 +130,44 @@
                 });
                 
                 if (missingElements.length > 0) {
-                    console.error('? Missing required DOM elements:', missingElements);
-                    showProjectNotification('? Page elements not loaded correctly. Please refresh.', 'error');
+                    console.error('ERROR: Missing required DOM elements:', missingElements);
+                    showProjectNotification('ERROR: Page elements not loaded correctly. Please refresh.', 'error');
                     return;
                 }
                 
-                console.log('? All required DOM elements found');
+                console.log('DOM: All required DOM elements found');
                 setupProjects();
-                console.log('? Company Projects setup complete');
+                console.log('SETUP: Company Projects setup complete');
             });
         });
     }
 
     // Setup projects
     function setupProjects() {
-        console.log('?? Setting up company projects');
+        console.log('SETUP: Setting up company projects');
         
         if (!window.firebaseAuth || !window.firebaseDB) {
-            console.error('? Firebase not available');
-            showProjectNotification('? Firebase not available. Please check your connection.', 'error');
+            console.error('ERROR: Firebase not available');
+            showProjectNotification('ERROR: Firebase not available. Please check your connection.', 'error');
             showEmptyState();
             return;
         }
         
         projectsDB = window.firebaseDB;
-        console.log('? Firebase database reference set');
+        console.log('FIREBASE: Firebase database reference set');
         
         // Note: Removed test connection to avoid permission errors
         // The actual data loading will test the connection
         
         window.firebaseAuth.onAuthStateChanged(function(user) {
-            console.log('?? Auth state changed:', user ? user.email : 'No user');
+            console.log('AUTH: Auth state changed:', user ? user.email : 'No user');
             
             if (!user) {
-                console.log('? No user, redirecting');
+                console.log('AUTH: No user, redirecting');
                 window.location.href = '/';
             } else {
                 projectsCurrentUser = user;
-                console.log('? User authenticated:', user.email);
+                console.log('AUTH: User authenticated:', user.email);
                 setupProjectHandlers();
                 loadProjectsFromFirebase();
             }
@@ -176,7 +176,7 @@
 
     // Handle Firebase errors
     function handleFirebaseError(error, operation) {
-        console.error('? Firebase ' + operation + ' failed:', error);
+        console.error('ERROR: Firebase ' + operation + ' failed:', error);
         
         let errorMessage = '';
         let showPermissionError = false;
@@ -205,7 +205,7 @@
                 errorMessage = 'Database error: ' + error.message;
         }
         
-        showProjectNotification('? ' + errorMessage, 'error');
+        showProjectNotification('ERROR: ' + errorMessage, 'error');
         
         if (showPermissionError) {
             showPermissionErrorState();
@@ -216,27 +216,27 @@
 
     // Load ALL projects for company collaboration
     async function loadProjectsFromFirebase() {
-        console.log('?? LOADING PROJECTS FROM FIREBASE');
+        console.log('LOADING: LOADING PROJECTS FROM FIREBASE');
         console.log('================================');
         
         if (!projectsDB || !projectsCurrentUser) {
-            const errorMsg = `? Missing requirements - DB: ${!!projectsDB}, User: ${!!projectsCurrentUser}`;
+            const errorMsg = `ERROR: Missing requirements - DB: ${!!projectsDB}, User: ${!!projectsCurrentUser}`;
             console.error(errorMsg);
-            showProjectNotification('? Cannot load projects: Missing requirements', 'error');
+            showProjectNotification('ERROR: Cannot load projects: Missing requirements', 'error');
             showEmptyState();
             return;
         }
         
-        console.log('?? Starting project load for user:', projectsCurrentUser.email);
+        console.log('LOADING: Starting project load for user:', projectsCurrentUser.email);
         showLoadingState(true);
         
         try {
-            console.log('?? Querying projects collection...');
+            console.log('QUERY: Querying projects collection...');
             
             let query = projectsDB.collection('projects');
             
             try {
-                console.log('?? Attempting ordered query...');
+                console.log('QUERY: Attempting ordered query...');
                 const snapshot = await query.orderBy('createdAt', 'desc').get();
                 
                 projectsList = snapshot.docs.map(function(doc) {
@@ -247,10 +247,10 @@
                     };
                 });
                 
-                console.log('? Projects loaded with ordering:', projectsList.length);
+                console.log('SUCCESS: Projects loaded with ordering:', projectsList.length);
                 
             } catch (orderError) {
-                console.log('?? OrderBy failed, loading without ordering:', orderError.message);
+                console.log('FALLBACK: OrderBy failed, loading without ordering:', orderError.message);
                 
                 const snapshot = await query.get();
                 
@@ -269,36 +269,36 @@
                     return dateB - dateA;
                 });
                 
-                console.log('? Projects loaded without ordering:', projectsList.length);
+                console.log('SUCCESS: Projects loaded without ordering:', projectsList.length);
             }
             
             // Debug project data
-            console.log('?? Project data summary:');
+            console.log('DATA: Project data summary:');
             projectsList.forEach((project, index) => {
                 console.log(`  ${index + 1}. ${project.name} (${project.status}) - ${project.authorName || 'Unknown'}`);
             });
             
             if (projectsList.length === 0) {
-                console.log('?? No projects found, showing empty state');
+                console.log('EMPTY: No projects found, showing empty state');
                 showEmptyState();
             } else {
-                console.log('?? Rendering projects...');
+                console.log('RENDER: Rendering projects...');
                 renderProjects();
                 
                 // Show completion message if applicable
                 const completedCount = projectsList.filter(p => p.status === 'Completed').length;
                 if (completedCount === projectsList.length && projectsList.length > 0) {
-                    showProjectNotification(`?? All ${projectsList.length} projects are completed!`, 'success');
+                    showProjectNotification(`SUCCESS: All ${projectsList.length} projects are completed!`, 'success');
                 }
             }
             
-            console.log('?? Updating project statistics...');
+            console.log('STATS: Updating project statistics...');
             updateProjectStats();
             
-            console.log('? Project loading completed successfully');
+            console.log('SUCCESS: Project loading completed successfully');
             
         } catch (error) {
-            console.error('? Error during project loading:', error);
+            console.error('ERROR: Error during project loading:', error);
             console.error('Error details:', {
                 code: error.code,
                 message: error.message,
@@ -306,31 +306,31 @@
             });
             handleFirebaseError(error, 'loading projects');
         } finally {
-            console.log('?? Hiding loading state');
+            console.log('UI: Hiding loading state');
             showLoadingState(false);
         }
     }
 
     // Create new project - ENHANCED with better validation and activity updates
     window.createProject = async function() {
-        console.log('?? Creating new project...');
+        console.log('CREATE: Creating new project...');
         
         if (!projectsDB || !projectsCurrentUser) {
-            console.error('? Database or user not available');
-            showProjectNotification('? Cannot create project: Not properly connected', 'error');
+            console.error('ERROR: Database or user not available');
+            showProjectNotification('ERROR: Cannot create project: Not properly connected', 'error');
             return;
         }
         
         const form = document.getElementById('createProjectForm');
         if (!form) {
-            console.error('? Create project form not found');
-            showProjectNotification('? Form not found', 'error');
+            console.error('ERROR: Create project form not found');
+            showProjectNotification('ERROR: Form not found', 'error');
             return;
         }
         
         // Enhanced validation
         if (!validateProjectForm(form)) {
-            console.log('?? Form validation failed, stopping creation');
+            console.log('VALIDATE: Form validation failed, stopping creation');
             return;
         }
         
@@ -362,9 +362,9 @@
             userName = userName.split('@')[0];
         }
         
-        console.log('?? Author name resolved to:', userName);
-        console.log('?? User email:', projectsCurrentUser.email);
-        console.log('?? User displayName:', projectsCurrentUser.displayName);
+        console.log('USER: Author name resolved to:', userName);
+        console.log('USER: User email:', projectsCurrentUser.email);
+        console.log('USER: User displayName:', projectsCurrentUser.displayName);
         
         const projectData = {
             name: formData.get('Name') || '',
@@ -380,7 +380,7 @@
             updatedAt: new Date().toISOString()
         };
         
-        console.log('?? Project data to create:', projectData);
+        console.log('DATA: Project data to create:', projectData);
         
         // Show loading state on button
         const createButton = document.querySelector('#addProjectModal .btn-modern.btn-add-project');
@@ -393,9 +393,9 @@
         
         try {
             const docRef = await projectsDB.collection('projects').add(projectData);
-            console.log('? Project created successfully with ID:', docRef.id);
+            console.log('SUCCESS: Project created successfully with ID:', docRef.id);
             
-            showProjectNotification('?? Project created and shared with team!', 'success');
+            showProjectNotification('SUCCESS: Project created and shared with team!', 'success');
             
             // Hide modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('addProjectModal'));
@@ -430,10 +430,10 @@
             window.dispatchEvent(projectEvent);
             window.dispatchEvent(createdEvent);
             
-            console.log('?? Project creation events dispatched for dashboard activity tracking');
+            console.log('EVENT: Project creation events dispatched for dashboard activity tracking');
             
         } catch (error) {
-            console.error('? Error creating project:', error);
+            console.error('ERROR: Error creating project:', error);
             handleFirebaseError(error, 'creating project');
         } finally {
             // Restore button
@@ -446,32 +446,32 @@
 
     // Update project - ENHANCED with better validation and activity updates
     window.updateProject = async function() {
-        console.log('?? Updating project...');
+        console.log('UPDATE: Updating project...');
         
         const projectId = document.getElementById('editProjectId')?.value;
         const form = document.getElementById('editProjectForm');
         
         if (!form || !projectId) {
-            console.error('? Edit project form or ID not found');
-            showProjectNotification('? Form or project ID not found', 'error');
+            console.error('ERROR: Edit project form or ID not found');
+            showProjectNotification('ERROR: Form or project ID not found', 'error');
             return;
         }
         
         // Enhanced validation
         if (!validateProjectForm(form)) {
-            console.log('?? Form validation failed, stopping update');
+            console.log('VALIDATE: Form validation failed, stopping update');
             return;
         }
         
         if (!projectsDB || !projectsCurrentUser) {
-            showProjectNotification('? Cannot update project: Not properly connected', 'error');
+            showProjectNotification('ERROR: Cannot update project: Not properly connected', 'error');
             return;
         }
         
         // Get current project data for comparison
         const oldProject = projectsList.find(p => p.id === projectId);
         if (!oldProject) {
-            showProjectNotification('? Project not found', 'error');
+            showProjectNotification('ERROR: Project not found', 'error');
             return;
         }
         
@@ -498,8 +498,8 @@
             updatedAt: new Date().toISOString()
         };
         
-        console.log('?? Project data to update:', projectData);
-        console.log('?? Changes detected:', { statusChanged, progressChanged, nameChanged });
+        console.log('DATA: Project data to update:', projectData);
+        console.log('CHANGES: Changes detected:', { statusChanged, progressChanged, nameChanged });
         
         // Show loading state on button
         const updateButton = document.querySelector('#editProjectModal .btn-modern.btn-edit-project');
@@ -512,16 +512,16 @@
         
         try {
             await projectsDB.collection('projects').doc(projectId).update(projectData);
-            console.log('? Project updated:', projectId);
+            console.log('SUCCESS: Project updated:', projectId);
             
             // Show appropriate success message
-            let successMessage = '? Project updated successfully!';
+            let successMessage = 'SUCCESS: Project updated successfully!';
             if (statusChanged && newStatus === 'Completed') {
-                successMessage = '?? Project marked as completed! Dashboard will update shortly.';
+                successMessage = 'SUCCESS: Project marked as completed! Dashboard will update shortly.';
             } else if (statusChanged) {
-                successMessage = `?? Project status changed to ${newStatus}!`;
+                successMessage = `SUCCESS: Project status changed to ${newStatus}!`;
             } else if (progressChanged) {
-                successMessage = `?? Project progress updated to ${newProgress}%!`;
+                successMessage = `SUCCESS: Project progress updated to ${newProgress}%!`;
             }
             
             showProjectNotification(successMessage, 'success');
@@ -591,10 +591,10 @@
             window.dispatchEvent(projectEvent);
             window.dispatchEvent(activityEvent);
             
-            console.log('?? Project update and activity events dispatched');
+            console.log('EVENT: Project update and activity events dispatched');
             
         } catch (error) {
-            console.error('? Error updating project:', error);
+            console.error('ERROR: Error updating project:', error);
             handleFirebaseError(error, 'updating project');
         } finally {
             // Restore button
@@ -609,7 +609,7 @@
     window.deleteProject = async function(projectId, projectName) {
         const project = projectsList.find(function(p) { return p.id === projectId; });
         if (!project) {
-            showProjectNotification('? Project not found', 'error');
+            showProjectNotification('ERROR: Project not found', 'error');
             return;
         }
         
@@ -619,7 +619,7 @@
         if (isOwner) {
             confirmMessage = 'Are you sure you want to delete "' + projectName + '"? This action cannot be undone.';
         } else {
-            confirmMessage = '?? WARNING: You are about to delete "' + projectName + '" created by ' + (project.authorName || project.authorEmail) + '.\n\nThis is a team project that doesn\'t belong to you. Are you sure you want to delete it?\n\nThis action cannot be undone and will affect the entire team.';
+            confirmMessage = 'WARNING: You are about to delete "' + projectName + '" created by ' + (project.authorName || project.authorEmail) + '.\n\nThis is a team project that doesn\'t belong to you. Are you sure you want to delete it?\n\nThis action cannot be undone and will affect the entire team.';
         }
         
         if (!confirm(confirmMessage)) {
@@ -627,17 +627,17 @@
         }
         
         if (!projectsDB || !projectsCurrentUser) {
-            showProjectNotification('? Cannot delete project: Not properly connected', 'error');
+            showProjectNotification('ERROR: Cannot delete project: Not properly connected', 'error');
             return;
         }
         
         try {
             await projectsDB.collection('projects').doc(projectId).delete();
-            console.log('? Project deleted:', projectId);
+            console.log('SUCCESS: Project deleted:', projectId);
             
             const successMessage = isOwner 
-                ? '? Your project deleted successfully!' 
-                : '? Team project deleted successfully!';
+                ? 'SUCCESS: Your project deleted successfully!' 
+                : 'SUCCESS: Team project deleted successfully!';
                 
             showProjectNotification(successMessage, 'success');
             await loadProjectsFromFirebase();
@@ -664,7 +664,7 @@
                 window.dispatchEvent(projectEvent);
                 window.dispatchEvent(deletedEvent);
                 
-                console.log('??? Project deletion events dispatched for dashboard activity tracking');
+                console.log('EVENT: Project deletion events dispatched for dashboard activity tracking');
             }
             
         } catch (error) {
@@ -681,7 +681,7 @@
             id: document.getElementById('editProjectId'),
             name: document.getElementById('editProjectName'),
             deadline: document.getElementById('editProjectDeadline'),
-            description: document.getElementById('editProjectDescription'),  // FIXED: Added missing closing parenthesis
+            description: document.getElementById('editProjectDescription'),
             status: document.getElementById('editProjectStatus'),
             priority: document.getElementById('editProjectPriority'),
             progress: document.getElementById('editProjectProgress')
@@ -690,8 +690,8 @@
         // Check if all elements exist
         const missingElements = Object.keys(elements).filter(key => !elements[key]);
         if (missingElements.length > 0) {
-            console.error('? Missing edit form elements:', missingElements);
-            showProjectNotification('? Edit form not properly loaded', 'error');
+            console.error('ERROR: Missing edit form elements:', missingElements);
+            showProjectNotification('ERROR: Edit form not properly loaded', 'error');
             return;
         }
         
@@ -723,927 +723,373 @@
         const project = projectsList.find(function(p) { return p.id === projectId; });
         if (!project) return;
         
-        const collaborationMessage = '?? Collaborate on: ' + project.name + '\n\nThis project belongs to ' + (project.authorName || project.authorEmail) + '.\nYou can view and edit this project as part of team collaboration.\n\nWould you like to edit the project?\n\nNote: Any changes you make will be visible to the entire team.';
+        const collaborationMessage = 'Collaborate on: ' + project.name + '\n\nThis project belongs to ' + (project.authorName || project.authorEmail) + '.\nYou can view and edit this project as part of team collaboration.\n\nWould you like to edit the project?\n\nNote: Any changes you make will be visible to the entire team.';
         
         if (confirm(collaborationMessage)) {
-            window.editProject(projectId);
+            editProject(projectId);
         }
     };
 
-    // Refresh projects with better error handling - Global function
-    window.refreshProjects = async function() {
-        const refreshBtn = document.getElementById('refreshBtn');
-        
-        if (!refreshBtn) {
-            console.warn('?? Refresh button not found');
-            await loadProjectsFromFirebase();
-            return;
-        }
-        
-        const icon = refreshBtn.querySelector('i');
-        
-        if (icon) icon.classList.add('fa-spin');
-        refreshBtn.disabled = true;
-        
-        try {
-            console.log('?? Refreshing projects...');
-            await loadProjectsFromFirebase();
-            showProjectNotification('? Company projects refreshed!', 'success');
-        } catch (error) {
-            console.error('? Error refreshing projects:', error);
-            handleFirebaseError(error, 'refreshing projects');
-        } finally {
-            if (icon) icon.classList.remove('fa-spin');
-            refreshBtn.disabled = false;
-        }
-    };
-
-    // Render projects with null checks
+    // Render projects - Helper function
     function renderProjects() {
-        const container = document.getElementById('projectsContainer');
+        console.log('RENDER: Rendering projects...');
         
+        const container = document.getElementById('projectsContainer');
         if (!container) {
-            console.error('? Projects container not found in DOM');
+            console.error('ERROR: Projects container not found');
             return;
         }
+        
+        container.innerHTML = '';
         
         if (projectsList.length === 0) {
             showEmptyState();
             return;
         }
         
-        console.log('?? Rendering projects in grid layout');
-        
-        // Clear container and reset to grid display
-        container.innerHTML = '';
-        container.style.display = 'grid';
-        container.removeAttribute('data-state');
-        
-        // Hide other states before showing projects
-        hideOtherStates();
-        
-        try {
-            projectsList.forEach(function(project) {
-                const projectCard = createProjectCard(project);
-                container.appendChild(projectCard);
-            });
-            
-            // Animate cards
-            setTimeout(function() {
-                animateProjectCards();
-            }, 100);
-            
-            console.log('? Projects rendered successfully:', projectsList.length);
-            
-        } catch (error) {
-            console.error('? Error rendering projects:', error);
-            showProjectNotification('?? Error displaying projects', 'warning');
-        }
-    }
-
-    // Validate project form with better error handling
-    function validateProjectForm(form) {
-        if (!form) {
-            console.error('? Form not provided to validateProjectForm');
-            showProjectNotification('? Form validation error', 'error');
-            return false;
-        }
-        
-        console.log('?? Validating project form...');
-        
-        // Get all required fields within the form
-        const requiredFields = form.querySelectorAll('input[required], textarea[required], select[required]');
-        let isValid = true;
-        let missingFields = [];
-        
-        requiredFields.forEach(function(field) {
-            const fieldName = field.getAttribute('name') || field.id || 'Unknown field';
-            const value = field.value ? field.value.trim() : '';
-            
-            console.log(`?? Checking field ${fieldName}: "${value}"`);
-            
-            if (!value) {
-                field.classList.add('is-invalid');
-                missingFields.push(fieldName);
-                isValid = false;
-                
-                // Add error styling
-                field.style.borderColor = '#ef4444';
-                field.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-            } else {
-                field.classList.remove('is-invalid');
-                
-                // Remove error styling
-                field.style.borderColor = '';
-                field.style.backgroundColor = '';
-            }
+        projectsList.forEach(function(project) {
+            const projectCard = createProjectCard(project);
+            container.appendChild(projectCard);
         });
         
-        if (!isValid) {
-            const message = `?? Missing required fields: ${missingFields.join(', ')}`;
-            console.warn('?? Form validation failed:', missingFields);
-            showProjectNotification(message, 'warning');
-            
-            // Focus on first invalid field
-            const firstInvalidField = form.querySelector('.is-invalid');
-            if (firstInvalidField) {
-                firstInvalidField.focus();
-            }
-        } else {
-            console.log('? Form validation passed');
-        }
-        
-        return isValid;
+        console.log('RENDER: Rendered', projectsList.length, 'projects');
     }
 
     // Create project card element
     function createProjectCard(project) {
         const card = document.createElement('div');
-        card.className = 'project-card status-' + project.status.toLowerCase().replace(' ', '');
-        card.setAttribute('data-status', project.status.toLowerCase().replace(' ', ''));
-        card.setAttribute('data-priority', project.priority.toLowerCase());
-        
-        const statusBadgeClass = getStatusBadgeClass(project.status);
-        const progressClass = getProgressClass(project.progress);
-        const isOverdue = new Date(project.deadline) < new Date() && project.status !== 'Completed';
+        card.className = 'project-card';
+        card.setAttribute('data-project-id', project.id);
         
         const isOwner = projectsCurrentUser && project.userId === projectsCurrentUser.uid;
-        const authorName = project.authorName || project.authorEmail || 'Unknown User';
         
-        // FIXED: Remove all emojis and question marks from badges
-        const authorBadge = isOwner 
-            ? '<span class="author-badge owner">You</span>' 
-            : '<span class="author-badge">' + escapeHtml(authorName) + '</span>';
+        // Calculate progress percentage safely
+        const progressValue = Math.max(0, Math.min(100, parseInt(project.progress) || 0));
         
-        const priorityIcon = project.priority === 'High' ? '<i class="fas fa-exclamation-triangle priority-indicator" title="High Priority"></i>' : '';
-        const overdueClass = isOverdue ? 'overdue' : '';
-        const overdueText = isOverdue ? 'Overdue: ' : 'Due: ';
-        
-        const actionsHtml = isOwner ? 
-            '<button class="btn-action btn-edit" onclick="editProject(\'' + project.id + '\')" title="Edit Project">' +
-            '<i class="fas fa-edit"></i>' +
-            '</button>' +
-            '<button class="btn-action btn-delete" onclick="deleteProject(\'' + project.id + '\', \'' + escapeHtml(project.name) + '\')" title="Delete Project">' +
-            '<i class="fas fa-trash"></i>' +
-            '</button>' :
-            '<button class="btn-action btn-edit" onclick="editProject(\'' + project.id + '\')" title="Edit Project">' +
-            '<i class="fas fa-edit"></i>' +
-            '</button>' +
-            '<button class="btn-action btn-collaborate" onclick="collaborateOnProject(\'' + project.id + '\')" title="Collaborate">' +
-            '<i class="fas fa-users"></i>' +
-            '</button>';
-        
-        // FIXED: Ensure progress is a number and has a valid width
-        const progressValue = parseInt(project.progress) || 0;
-        const progressWidth = Math.max(0, Math.min(100, progressValue));
-        
-        card.innerHTML = '<div class="project-header">' +
-            '<h3 class="project-title">' + escapeHtml(project.name) + '</h3>' +
-            '<div class="project-header-badges">' + priorityIcon + '</div>' +
-            '</div>' +
-            '<div class="project-author">' + authorBadge + '</div>' +
-            '<p class="project-description">' + escapeHtml(project.description) + '</p>' +
-            '<div class="project-meta">' +
-            '<span class="status-badge ' + statusBadgeClass + '">' + project.status + '</span>' +
-            '<div class="deadline-info ' + overdueClass + '">' +
-            '<i class="fas fa-calendar-alt"></i>' +
-            '<span>' + overdueText + new Date(project.deadline).toLocaleDateString() + '</span>' +
-            '</div>' +
-            '</div>' +
-            '<div class="progress-section">' +
-            '<div class="progress-header">' +
-            '<span class="progress-label">Progress</span>' +
-            '<span class="progress-percentage">' + progressValue + '%</span>' +
-            '</div>' +
-            '<div class="progress-bar-container">' +
-            '<div class="progress-bar ' + progressClass + '" style="width: ' + progressWidth + '%"></div>' +
-            '</div>' +
-            '</div>' +
-            '<div class="project-actions">' +
-            '<button class="btn-action btn-view" onclick="viewProject(\'' + project.id + '\')" title="View Details">' +
-            '<i class="fas fa-eye"></i>' +
-            '</button>' +
-            actionsHtml +
-            '</div>';
+        card.innerHTML = `
+            <div class="project-header">
+                <h3 class="project-title">${escapeHtml(project.name)}</h3>
+            </div>
+            <div class="project-meta">
+                <span class="project-author">
+                    <i class="fas fa-user"></i> ${escapeHtml(project.authorName || project.authorEmail || 'Unknown')}
+                    ${!isOwner ? '<i class="fas fa-users" title="Team Project" style="margin-left: 0.5rem;"></i>' : ''}
+                </span>
+                <span class="project-status ${(project.status || 'planning').toLowerCase()}">${project.status || 'Planning'}</span>
+                <span class="project-priority ${(project.priority || 'medium').toLowerCase()}">${project.priority || 'Medium'}</span>
+            </div>
+            <p class="project-description">${escapeHtml(project.description || 'No description provided.')}</p>
+            <div class="project-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${progressValue}%"></div>
+                </div>
+                <span class="progress-text">${progressValue}%</span>
+            </div>
+            <div class="project-footer">
+                <span class="project-deadline">
+                    <i class="fas fa-calendar"></i> ${new Date(project.deadline).toLocaleDateString()}
+                </span>
+                <div class="project-actions">
+                    ${!isOwner ? `
+                        <button class="project-btn btn-view" onclick="collaborateOnProject('${project.id}')" title="Collaborate on Team Project">
+                            <i class="fas fa-users"></i> Collaborate
+                        </button>
+                    ` : ''}
+                    <button class="project-btn btn-edit" onclick="editProject('${project.id}')" title="Edit Project">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="project-btn btn-delete" onclick="deleteProject('${project.id}', '${escapeHtml(project.name).replace(/'/g, '\\\'')}')" title="Delete Project">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        `;
         
         return card;
     }
 
-    // Animate project cards
-    function animateProjectCards() {
-        const cards = document.querySelectorAll('.project-card');
-        cards.forEach(function(card, index) {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            
-            setTimeout(function() {
-                card.style.transition = 'all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, index * 100);
-        });
-    }
-
-    // Utility functions
-    function getStatusBadgeClass(status) {
-        const statusMap = {
-            'Planning': 'planning',
-            'Active': 'active',
-            'Completed': 'completed',
-            'OnHold': 'onhold'
-        };
-        return statusMap[status] || 'planning';
-    }
-
-    function getProgressClass(progress) {
-        if (progress >= 75) return 'high-progress';
-        if (progress >= 50) return 'medium-progress';
-        if (progress >= 25) return 'low-progress';
-        return 'very-low-progress';
-    }
-
+    // Escape HTML to prevent XSS
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 
-    // UI state functions with proper null checks and fallbacks
-    function showLoadingState(show) {
-        const loadingState = document.getElementById('loadingState');
-        const container = document.getElementById('projectsContainer');
-        
-        if (!loadingState) {
-            console.warn('?? Loading state element not found in DOM - creating fallback');
-            // Create a simple loading indicator if element doesn't exist
-            if (container && show) {
-                container.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-            }
-            return;
-        }
-        
-        if (!container) {
-            console.warn('?? Projects container element not found in DOM');
-            return;
-        }
-        
-        if (show) {
-            loadingState.style.display = 'flex';
-            container.style.display = 'grid';
-            container.setAttribute('data-state', 'loading');
-            hideOtherStates();
-            console.log('?? Loading state shown and centered');
-        } else {
-            loadingState.style.display = 'none';
-            container.removeAttribute('data-state');
-            console.log('?? Loading state hidden');
-        }
-    }
-
-    function showEmptyState() {
-        const emptyState = document.getElementById('emptyState');
-        const container = document.getElementById('projectsContainer');
-        
-        if (!emptyState) {
-            console.warn('?? Empty state element not found in DOM - creating fallback');
-            // Create a simple empty state if element doesn't exist
-            if (container) {
-                container.innerHTML = '<div style="text-align: center; padding: 3rem;"><h4>No Projects Found</h4><p>Create your first project to get started.</p></div>';
-                container.style.display = 'flex';
-                container.setAttribute('data-state', 'empty');
-            }
-            return;
-        }
-        
-        if (!container) {
-            console.warn('?? Projects container element not found in DOM');
-            return;
-        }
-        
-        container.style.display = 'flex';
-        container.setAttribute('data-state', 'empty');
-        emptyState.style.display = 'block';
-        hideOtherStates();
-        console.log('?? Empty state shown and centered');
-    }
-
-    function showPermissionErrorState() {
-        const permissionError = document.getElementById('permissionError');
-        const container = document.getElementById('projectsContainer');
-        
-        if (!permissionError) {
-            console.warn('?? Permission error element not found in DOM - creating fallback');
-            if (container) {
-                container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #ef4444;"><h4>Permission Error</h4><p>Unable to access projects. Please check your permissions.</p></div>';
-                container.style.display = 'flex';
-                container.setAttribute('data-state', 'error');
-            }
-            return;
-        }
-        
-        if (!container) {
-            console.warn('?? Projects container element not found in DOM');
-            return;
-        }
-        
-        container.style.display = 'flex';
-        container.setAttribute('data-state', 'error');
-        permissionError.style.display = 'block';
-        hideOtherStates();
-        console.log('?? Permission error state shown and centered');
-    }
-
-    function hideOtherStates() {
-        const states = ['loadingState', 'emptyState', 'permissionError'];
-        states.forEach(function(stateId) {
-            const element = document.getElementById(stateId);
-            if (element && element.style && !element.style.display.includes('block')) {
-                element.style.display = 'none';
-            }
-        });
-    }
-
-    // Update project statistics with null checks and better status detection
+    // Update project statistics
     function updateProjectStats() {
-        console.log('?? All projects:', projectsList.map(p => ({ 
-            name: p.name, 
-            status: p.status, 
-            statusType: typeof p.status 
-        })));
+        const totalEl = document.getElementById('total-projects');
+        const activeEl = document.getElementById('active-projects');
+        const completedEl = document.getElementById('completed-projects');
+        const overdueEl = document.getElementById('overdue-projects');
         
-        // Fix: Better status filtering logic
-        const stats = {
-            total: projectsList.length,
-            active: projectsList.filter(function(p) { 
-                const status = p.status;
-                // Active means NOT completed - check for exact status matches
-                return status !== 'Completed' && status !== 'Complete' && status !== 'Done';
-            }).length,
-            completed: projectsList.filter(function(p) { 
-                const status = p.status;
-                // Completed projects
-                return status === 'Completed' || status === 'Complete' || status === 'Done';
-            }).length,
-            overdue: projectsList.filter(function(p) { 
-                const deadline = new Date(p.deadline);
-                const now = new Date();
-                const status = p.status;
-                // Overdue: deadline passed AND not completed
-                return deadline < now && status !== 'Completed' && status !== 'Complete' && status !== 'Done';
-            }).length
-        };
-        
-        const myProjects = projectsList.filter(function(p) { return projectsCurrentUser && p.userId === projectsCurrentUser.uid; }).length;
-        const teamProjects = projectsList.length - myProjects;
-        
-        console.log('?? Updating project stats with better logic:', stats);
-        console.log('?? My projects: ' + myProjects + ', ?? Team projects: ' + teamProjects);
-        
-        // Safely update stat elements with null checks
-        const totalElement = document.getElementById('total-projects');
-        const activeElement = document.getElementById('active-projects');
-        const completedElement = document.getElementById('completed-projects');
-        const overdueElement = document.getElementById('overdue-projects');
-        
-        if (totalElement) {
-            totalElement.textContent = stats.total;
-            console.log('? Updated total projects:', stats.total);
+        if (!totalEl || !activeEl || !completedEl || !overdueEl) {
+            console.warn('STATS: Stats elements not found');
+            return;
         }
-        if (activeElement) {
-            activeElement.textContent = stats.active;
-            console.log('? Updated active projects:', stats.active);
-        }
-        if (completedElement) {
-            completedElement.textContent = stats.completed;
-            console.log('? Updated completed projects:', stats.completed);
-        }
-        if (overdueElement) {
-            overdueElement.textContent = stats.overdue;
-            console.log('? Updated overdue projects:', stats.overdue);
-        }
+        
+        const total = projectsList.length;
+        const completed = projectsList.filter(p => p.status === 'Completed').length;
+        const active = total - completed;
+        
+        const now = new Date();
+        const overdue = projectsList.filter(p => {
+            if (p.status === 'Completed') return false;
+            const deadline = new Date(p.deadline);
+            return deadline < now;
+        }).length;
+        
+        totalEl.textContent = total;
+        activeEl.textContent = active;
+        completedEl.textContent = completed;
+        overdueEl.textContent = overdue;
+        
+        console.log('STATS: Updated -', { total, active, completed, overdue });
     }
 
-    // Setup project handlers with proper null checks and manual event binding
+    // Show loading state
+    function showLoadingState(show) {
+        const loadingEl = document.getElementById('loadingState');
+        const containerEl = document.getElementById('projectsContainer');
+        const emptyEl = document.getElementById('emptyState');
+        
+        if (loadingEl) loadingEl.style.display = show ? 'block' : 'none';
+        if (containerEl) containerEl.style.display = show ? 'none' : 'grid';
+        if (emptyEl) emptyEl.style.display = 'none';
+    }
+
+    // Show empty state
+    function showEmptyState() {
+        const loadingEl = document.getElementById('loadingState');
+        const containerEl = document.getElementById('projectsContainer');
+        const emptyEl = document.getElementById('emptyState');
+        
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (containerEl) containerEl.style.display = 'none';
+        if (emptyEl) emptyEl.style.display = 'block';
+    }
+
+    // Show permission error state
+    function showPermissionErrorState() {
+        const container = document.getElementById('projectsContainer');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="error-state">
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <h3>Database Access Denied</h3>
+                <p>Please check Firestore security rules.</p>
+            </div>
+        `;
+    }
+
+    // Setup project handlers
     function setupProjectHandlers() {
-        console.log('?? Setting up project handlers');
+        console.log('HANDLERS: Setting up project handlers');
         
-        // Wait a bit for DOM elements to be fully ready
-        setTimeout(function() {
-            const searchInput = document.getElementById('searchInput');
-            const statusFilter = document.getElementById('statusFilter');
-            const priorityFilter = document.getElementById('priorityFilter');
-            
-            console.log('?? Filter elements check:', {
-                searchInput: !!searchInput,
-                statusFilter: !!statusFilter,
-                priorityFilter: !!priorityFilter
-            });
-            
-            if (searchInput) {
-                // Remove existing listeners first
-                searchInput.removeEventListener('input', filterProjects);
-                searchInput.addEventListener('input', filterProjects);
-                console.log('? Search input handler set up');
-            } else {
-                console.warn('?? Search input not found');
-            }
-            
-            if (statusFilter) {
-                // Remove existing listeners first
-                statusFilter.removeEventListener('change', filterProjects);
-                statusFilter.addEventListener('change', filterProjects);
-                console.log('? Status filter handler set up');
-                
-                // Make sure dropdown is clickable
-                statusFilter.style.pointerEvents = 'auto';
-                statusFilter.style.cursor = 'pointer';
-            } else {
-                console.warn('?? Status filter not found');
-            }
-            
-            if (priorityFilter) {
-                // Remove existing listeners first
-                priorityFilter.removeEventListener('change', filterProjects);
-                priorityFilter.addEventListener('change', filterProjects);
-                console.log('? Priority filter handler set up');
-                
-                // Make sure dropdown is clickable
-                priorityFilter.style.pointerEvents = 'auto';
-                priorityFilter.style.cursor = 'pointer';
-            } else {
-                console.warn('?? Priority filter not found');
-            }
-            
-            // Setup clear button
-            const clearButton = document.querySelector('.btn-clear-filters');
-            if (clearButton) {
-                clearButton.removeEventListener('click', window.clearProjectFilters);
-                clearButton.addEventListener('click', window.clearProjectFilters);
-                clearButton.style.pointerEvents = 'auto';
-                clearButton.style.cursor = 'pointer';
-                console.log('? Clear button handler set up');
-            } else {
-                console.warn('?? Clear button not found');
-            }
-            
-            setupViewToggles();
-            
-            // Test the filters immediately
-            setTimeout(function() {
-                console.log('?? Testing filter functionality...');
-                if (statusFilter && priorityFilter) {
-                    console.log('?? Status options:', Array.from(statusFilter.options).map(o => o.value));
-                    console.log('?? Priority options:', Array.from(priorityFilter.options).map(o => o.value));
-                }
-            }, 1000);
-            
-            console.log('? Project handlers set up successfully');
-        }, 500);
-    }
-
-    // Global filter function for HTML onclick
-    window.filterProjects = filterProjects;
-
-    // Enhanced filter projects function with better error handling
-    function filterProjects() {
-        console.log('?? Filtering projects...');
-        
-        const searchInput = document.getElementById('searchInput');
-        const statusFilter = document.getElementById('statusFilter');
-        const priorityFilter = document.getElementById('priorityFilter');
-        
-        if (!searchInput || !statusFilter || !priorityFilter) {
-            console.warn('?? Filter elements not found:', {
-                searchInput: !!searchInput,
-                statusFilter: !!statusFilter,
-                priorityFilter: !!priorityFilter
-            });
-            return;
-        }
-        
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        const statusValue = statusFilter.value;
-        const priorityValue = priorityFilter.value;
-        
-        console.log('?? Filter values:', {
-            searchTerm: searchTerm,
-            statusValue: statusValue,
-            priorityValue: priorityValue
-        });
-        
-        const cards = document.querySelectorAll('.project-card');
-        let visibleCount = 0;
-        
-        console.log('?? Total cards to filter:', cards.length);
-        
-        cards.forEach(function(card, index) {
-            const titleElement = card.querySelector('.project-title');
-            const descriptionElement = card.querySelector('.project-description');
-            
-            if (!titleElement || !descriptionElement) {
-                console.warn('?? Missing title or description in card', index);
-                return;
-            }
-            
-            const title = titleElement.textContent.toLowerCase();
-            const description = descriptionElement.textContent.toLowerCase();
-            const status = card.getAttribute('data-status');
-            const priority = card.getAttribute('data-priority');
-            
-            // Check all filter criteria
-            const matchesSearch = !searchTerm || title.includes(searchTerm) || description.includes(searchTerm);
-            const matchesStatus = statusValue === 'all' || status === statusValue;
-            const matchesPriority = priorityValue === 'all' || priority === priorityValue;
-            
-            const shouldShow = matchesSearch && matchesStatus && matchesPriority;
-            
-            if (shouldShow) {
-                card.style.display = 'block';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(10px)';
-            }
-        });
-        
-        // Show message if no results
-        const container = document.getElementById('projectsContainer');
-        if (container) {
-            const existingMessage = container.querySelector('.no-results-message');
-            if (existingMessage) {
-                existingMessage.remove();
-            }
-            
-            if (visibleCount === 0 && cards.length > 0) {
-                const noResultsDiv = document.createElement('div');
-                noResultsDiv.className = 'no-results-message';
-                noResultsDiv.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 2rem; color: #6b7280;';
-                noResultsDiv.innerHTML = `
-                    <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; color: var(--brand-orange);"></i>
-                    <h4>No projects match your filters</h4>
-                    <p>Try adjusting your search criteria or filters</p>
-                    <button onclick="clearProjectFilters()" class="btn-modern" style="margin-top: 1rem;">
-                        <i class="fas fa-times"></i> Clear Filters
-                    </button>
-                `;
-                container.appendChild(noResultsDiv);
-            }
-        }
-        
-        console.log(`?? Filter applied: ${visibleCount} of ${cards.length} projects visible`);
-        
-        // Show notification about filter results
-        if (searchTerm || statusValue !== 'all' || priorityValue !== 'all') {
-            const filterMessage = `?? Showing ${visibleCount} project${visibleCount !== 1 ? 's' : ''} matching your filters`;
-            showProjectNotification(filterMessage, 'info');
-        }
-    }
-
-    // Enhanced clear filters function
-    window.clearProjectFilters = function() {
-        console.log('?? Clearing all filters...');
-        
-        const searchInput = document.getElementById('searchInput');
-        const statusFilter = document.getElementById('statusFilter');
-        const priorityFilter = document.getElementById('priorityFilter');
-        
-        console.log('?? Filter elements for clearing:', {
-            searchInput: !!searchInput,
-            statusFilter: !!statusFilter,
-            priorityFilter: !!priorityFilter
-        });
-        
-        if (searchInput) {
-            searchInput.value = '';
-            console.log('?? Search input cleared');
-        }
-        
-        if (statusFilter) {
-            statusFilter.value = 'all';
-            console.log('?? Status filter reset to "all"');
-        }
-        
-        if (priorityFilter) {
-            priorityFilter.value = 'all';
-            console.log('?? Priority filter reset to "all"');
-        }
-        
-        // Remove no results message
-        const container = document.getElementById('projectsContainer');
-        if (container) {
-            const existingMessage = container.querySelector('.no-results-message');
-            if (existingMessage) {
-                existingMessage.remove();
-            }
-        }
-        
-        // Apply the cleared filters
-        filterProjects();
-        showProjectNotification('?? All filters cleared', 'success');
-    };
-
-    // Setup view toggles with null checks and smooth transitions
-    function setupViewToggles() {
-        const viewToggles = document.querySelectorAll('.view-toggle');
-        const projectsContainer = document.getElementById('projectsContainer');
-        
-        if (!projectsContainer) {
-            console.warn('?? Projects container not found for view toggles');
-            return;
-        }
-        
-        if (viewToggles.length === 0) {
-            console.warn('?? No view toggle buttons found');
-            return;
-        }
-        
-        viewToggles.forEach(function(toggle) {
-            toggle.addEventListener('click', function(e) {
+        // Create project form submit
+        const createForm = document.getElementById('createProjectForm');
+        if (createForm) {
+            createForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                
-                // Remove active class from all toggles
-                viewToggles.forEach(function(t) { 
-                    t.classList.remove('active'); 
-                });
-                
-                // Add active class to clicked toggle
+                window.createProject();
+            });
+        }
+        
+        // Edit project form submit
+        const editForm = document.getElementById('editProjectForm');
+        if (editForm) {
+            editForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                window.updateProject();
+            });
+        }
+        
+        // ADDED: Search input filter
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                console.log('FILTER: Search input changed:', this.value);
+                applyFilters();
+            });
+        }
+        
+        // ADDED: Status filter dropdown
+        const statusFilter = document.getElementById('statusFilter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', function() {
+                console.log('FILTER: Status filter changed:', this.value);
+                applyFilters();
+            });
+        }
+        
+        // ADDED: Priority filter dropdown
+        const priorityFilter = document.getElementById('priorityFilter');
+        if (priorityFilter) {
+            priorityFilter.addEventListener('change', function() {
+                console.log('FILTER: Priority filter changed:', this.value);
+                applyFilters();
+            });
+        }
+        
+        // ADDED: View toggle buttons
+        const viewToggles = document.querySelectorAll('.view-toggle');
+        viewToggles.forEach(function(toggle) {
+            toggle.addEventListener('click', function() {
+                viewToggles.forEach(function(t) { t.classList.remove('active'); });
                 this.classList.add('active');
                 
-                const view = this.getAttribute('data-view');
-                const viewName = view === 'list' ? 'List View' : 'Grid View';
-                
-                // Apply view with smooth transition
-                projectsContainer.style.transition = 'all 0.3s ease';
+                const view = this.dataset.view;
+                const container = document.getElementById('projectsContainer');
                 
                 if (view === 'list') {
-                    projectsContainer.classList.add('list-view');
-                    projectsContainer.style.gridTemplateColumns = '1fr';
-                    
-                    // Apply list-specific styling to cards
-                    const cards = projectsContainer.querySelectorAll('.project-card');
-                    cards.forEach(function(card) {
-                        card.style.transition = 'all 0.3s ease';
-                        card.style.margin = '0.5rem 0';
-                        card.style.width = '100%';
-                    });
+                    container.classList.add('list-view');
                 } else {
-                    projectsContainer.classList.remove('list-view');
-                    projectsContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(350px, 1fr))';
-                    
-                    // Apply grid-specific styling to cards
-                    const cards = projectsContainer.querySelectorAll('.project-card');
-                    cards.forEach(function(card) {
-                        card.style.transition = 'all 0.3s ease';
-                        card.style.margin = '0';
-                        card.style.width = 'auto';
-                    });
+                    container.classList.remove('list-view');
                 }
                 
-                console.log(`?? View changed to: ${viewName}`);
-                showProjectNotification(`?? Switched to ${viewName}`, 'success');
+                console.log('VIEW: Changed to', view);
             });
         });
         
-        console.log('? View toggles set up');
+        console.log('HANDLERS: Project handlers setup complete');
     }
-
-    // Force reinitialize handlers
-    window.forceReinitHandlers = function() {
-        console.log('?? Force reinitializing all handlers...');
-        
-        // Remove existing handlers
-        const statusFilter = document.getElementById('statusFilter');
-        const priorityFilter = document.getElementById('priorityFilter');
-        const searchInput = document.getElementById('searchInput');
-        const clearBtn = document.querySelector('.btn-clear-filters');
-        
-        if (statusFilter) {
-            statusFilter.removeEventListener('change', filterProjects);
-            statusFilter.addEventListener('change', filterProjects);
-            statusFilter.onchange = filterProjects;
-            console.log('?? Status filter handlers reset');
-        }
-        
-        if (priorityFilter) {
-            priorityFilter.removeEventListener('change', filterProjects);
-            priorityFilter.addEventListener('change', filterProjects);
-            priorityFilter.onchange = filterProjects;
-            console.log('?? Priority filter handlers reset');
-        }
-        
-        if (searchInput) {
-            searchInput.removeEventListener('input', filterProjects);
-            searchInput.addEventListener('input', filterProjects);
-            searchInput.oninput = filterProjects;
-            console.log('?? Search input handlers reset');
-        }
-        
-        if (clearBtn) {
-            clearBtn.removeEventListener('click', window.clearProjectFilters);
-            clearBtn.addEventListener('click', window.clearProjectFilters);
-            clearBtn.onclick = window.clearProjectFilters;
-            console.log('?? Clear button handlers reset');
-        }
-    };
-
-    // Debug function to test dropdowns - Global function
-    window.debugFilters = function() {
-        console.log('?? DEBUGGING FILTER FUNCTIONALITY');
-        console.log('================================');
-        
-        const searchInput = document.getElementById('searchInput');
-        const statusFilter = document.getElementById('statusFilter');
-        const priorityFilter = document.getElementById('priorityFilter');
-        const clearBtn = document.querySelector('.btn-clear-filters');
-        
-        console.log('?? Element Check:');
-        console.log('- Search Input:', !!searchInput, searchInput);
-        console.log('- Status Filter:', !!statusFilter, statusFilter);
-        console.log('- Priority Filter:', !!priorityFilter, priorityFilter);
-        console.log('- Clear Button:', !!clearBtn, clearBtn);
-        
-        if (statusFilter) {
-            console.log('?? Status Filter Details:');
-            console.log('- Value:', statusFilter.value);
-            console.log('- Disabled:', statusFilter.disabled);
-            console.log('- Pointer Events:', getComputedStyle(statusFilter).pointerEvents);
-            console.log('- Options:', Array.from(statusFilter.options).map(o => ({value: o.value, text: o.text})));
-            
-            // Add visual debug
-            statusFilter.setAttribute('data-debug', 'true');
-            statusFilter.style.border = '3px solid red';
-            statusFilter.style.background = 'yellow';
-        }
-        
-        if (priorityFilter) {
-            console.log('?? Priority Filter Details:');
-            console.log('- Value:', priorityFilter.value);
-            console.log('- Disabled:', priorityFilter.disabled);
-            console.log('- Pointer Events:', getComputedStyle(priorityFilter).pointerEvents);
-            console.log('- Options:', Array.from(priorityFilter.options).map(o => ({value: o.value, text: o.text})));
-            
-            // Add visual debug
-            priorityFilter.setAttribute('data-debug', 'true');
-            priorityFilter.style.border = '3px solid blue';
-            priorityFilter.style.background = 'lightblue';
-        }
-        
-        if (clearBtn) {
-            console.log('?? Clear Button Details:');
-            console.log('- Disabled:', clearBtn.disabled);
-            console.log('- Pointer Events:', getComputedStyle(clearBtn).pointerEvents);
-            console.log('- Click Handler:', clearBtn.onclick);
-            
-            // Add visual debug
-            clearBtn.setAttribute('data-debug', 'true');
-            clearBtn.style.border = '3px solid green';
-            clearBtn.style.background = 'lightgreen';
-        }
-        
-        console.log('?? Project Cards:', document.querySelectorAll('.project-card').length);
-        
-        return {
-            searchInput,
-            statusFilter,
-            priorityFilter,
-            clearBtn
-        };
-    };
-
-    // Test change events manually
-    window.testDropdownChange = function() {
-        console.log('?? Testing dropdown change events...');
-        
-        const statusFilter = document.getElementById('statusFilter');
-        const priorityFilter = document.getElementById('priorityFilter');
-        
-        if (statusFilter) {
-            console.log('?? Current status value:', statusFilter.value);
-            statusFilter.value = 'active';
-            console.log('?? Changed status to:', statusFilter.value);
-            
-            // Trigger change event manually
-            statusFilter.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log('?? Dispatched change event for status filter');
-        }
-        
-        if (priorityFilter) {
-            console.log('?? Current priority value:', priorityFilter.value);
-            priorityFilter.value = 'high';
-            console.log('?? Changed priority to:', priorityFilter.value);
-            
-            // Trigger change event manually
-            priorityFilter.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log('?? Dispatched change event for priority filter');
-        }
-    };
-
-    // Force setup handlers after a delay (fallback)
-    window.forceSetupHandlers = function() {
-        console.log('?? Force setting up handlers...');
-        setupProjectHandlers();
-    };
-
-    // Add manual event listeners as a fallback
-    window.addEventListener('load', function() {
-        console.log('?? Window loaded, setting up manual fallback handlers...');
-        
-        setTimeout(function() {
-            const statusFilter = document.getElementById('statusFilter');
-            const priorityFilter = document.getElementById('priorityFilter');
-            const searchInput = document.getElementById('searchInput');
-            const clearBtn = document.querySelector('.btn-clear-filters');
-            
-            if (statusFilter && !statusFilter.hasAttribute('data-handler-set')) {
-                statusFilter.onchange = filterProjects;
-                statusFilter.setAttribute('data-handler-set', 'true');
-                console.log('?? Manual status filter handler set');
-            }
-            
-            if (priorityFilter && !priorityFilter.hasAttribute('data-handler-set')) {
-                priorityFilter.onchange = filterProjects;
-                priorityFilter.setAttribute('data-handler-set', 'true');
-                console.log('?? Manual priority filter set');
-            }
-            
-            if (searchInput && !searchInput.hasAttribute('data-handler-set')) {
-                searchInput.oninput = filterProjects;
-                searchInput.setAttribute('data-handler-set', 'true');
-                console.log('?? Manual search input handler set');
-            }
-            
-            if (clearBtn && !clearBtn.hasAttribute('data-handler-set')) {
-                clearBtn.onclick = window.clearProjectFilters;
-                clearBtn.setAttribute('data-handler-set', 'true');
-                console.log('?? Manual clear button handler set');
-            }
-        }, 2000);
-    });
     
-    // Call initialization
-    initializeProjects();
-
-    // Listen for custom Firebase ready event as backup
-    window.addEventListener('firebaseReady', function() {
-        console.log('?? Firebase ready event received');
-        if (!projectsFirebaseReady) {
-            initializeProjects();
-        }
-    });
-
-    console.log('?? Company Projects script loaded');
-
-    // Debug function to force project loading
-    window.forceLoadProjects = function() {
-        console.log('?? FORCE LOADING PROJECTS');
-        console.log('========================');
+    // ADDED: Apply filters function
+    function applyFilters() {
+        console.log('FILTER: Applying filters...');
         
-        console.log('?? Current State:');
-        console.log('- Firebase Ready:', projectsFirebaseReady);
-        console.log('- Current User:', projectsCurrentUser ? projectsCurrentUser.email : 'None');
-        console.log('- Database Available:', !!projectsDB);
-        console.log('- Projects List Length:', projectsList.length);
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const priorityFilter = document.getElementById('priorityFilter');
         
-        if (projectsDB && projectsCurrentUser) {
-            console.log('? All requirements met, forcing load...');
-            loadProjectsFromFirebase()
-                .then(() => {
-                    console.log('? Force load completed');
-                })
-                .catch((error) => {
-                    console.error('? Force load failed:', error);
-                });
-        } else {
-            console.log('? Requirements not met:');
-            console.log('- Database:', !!projectsDB);
-            console.log('- User:', !!projectsCurrentUser);
-            
-            if (!projectsCurrentUser) {
-                console.log('?? Attempting to get current user...');
-                if (window.firebaseAuth && window.firebaseAuth.currentUser) {
-                    projectsCurrentUser = window.firebaseAuth.currentUser;
-                    console.log('? Got current user:', projectsCurrentUser.email);
-                    
-                    if (!projectsDB && window.firebaseDB) {
-                        projectsDB = window.firebaseDB;
-                        console.log('? Got database reference');
-                    }
-                    
-                    // Try loading again
-                    loadProjectsFromFirebase()
-                        .then(() => {
-                            console.log('? Force load after retry completed');
-                        })
-                        .catch((error) => {
-                            console.error('? Force load after retry failed:', error);
-                        });
-                } else {
-                    console.log('? No current user available in Firebase Auth');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        const statusValue = statusFilter ? statusFilter.value.toLowerCase() : 'all';
+        const priorityValue = priorityFilter ? priorityFilter.value.toLowerCase() : 'all';
+        
+        console.log('FILTER: Search:', searchTerm, 'Status:', statusValue, 'Priority:', priorityValue);
+        
+        // Filter projects
+        const filteredProjects = projectsList.filter(function(project) {
+            // Search filter
+            if (searchTerm && searchTerm.length > 0) {
+                const nameMatch = project.name && project.name.toLowerCase().includes(searchTerm);
+                const descMatch = project.description && project.description.toLowerCase().includes(searchTerm);
+                const authorMatch = project.authorName && project.authorName.toLowerCase().includes(searchTerm);
+                
+                if (!nameMatch && !descMatch && !authorMatch) {
+                    return false;
                 }
             }
+            
+            // Status filter
+            if (statusValue !== 'all') {
+                const projectStatus = (project.status || 'planning').toLowerCase();
+                if (projectStatus !== statusValue) {
+                    return false;
+                }
+            }
+            
+            // Priority filter
+            if (priorityValue !== 'all') {
+                const projectPriority = (project.priority || 'medium').toLowerCase();
+                if (projectPriority !== priorityValue) {
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+        
+        console.log('FILTER: Filtered projects:', filteredProjects.length, '/', projectsList.length);
+        
+        // Render filtered projects
+        renderFilteredProjects(filteredProjects);
+    }
+    
+    // ADDED: Render filtered projects
+    function renderFilteredProjects(filteredProjects) {
+        console.log('RENDER: Rendering filtered projects...');
+        
+        const container = document.getElementById('projectsContainer');
+        if (!container) {
+            console.error('ERROR: Projects container not found');
+            return;
         }
+        
+        container.innerHTML = '';
+        
+        if (filteredProjects.length === 0) {
+            // Show filtered empty state
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'col-span-full text-center py-12';
+            emptyDiv.innerHTML = `
+                <div class="empty-projects" style="display: block;">
+                    <div class="empty-icon">
+                        <i class="fas fa-filter"></i>
+                    </div>
+                    <h4>No Projects Match Your Filters</h4>
+                    <p>Try adjusting your search criteria or clear filters to see all projects.</p>
+                    <button class="btn-modern btn-secondary" onclick="clearProjectFilters()">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </button>
+                </div>
+            `;
+            container.appendChild(emptyDiv);
+            return;
+        }
+        
+        filteredProjects.forEach(function(project) {
+            const projectCard = createProjectCard(project);
+            container.appendChild(projectCard);
+        });
+        
+        console.log('RENDER: Rendered', filteredProjects.length, 'filtered projects');
+    }
+    
+    // ADDED: Clear filters function (Global)
+    window.clearProjectFilters = function() {
+        console.log('FILTER: Clearing all filters...');
+        
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const priorityFilter = document.getElementById('priorityFilter');
+        
+        if (searchInput) searchInput.value = '';
+        if (statusFilter) statusFilter.value = 'all';
+        if (priorityFilter) priorityFilter.value = 'all';
+        
+        // Re-render all projects
+        renderProjects();
+        
+        showProjectNotification('? Filters cleared!', 'info');
+        console.log('FILTER: Filters cleared successfully');
     };
+    
+    // ADDED: Refresh projects function (Global)
+    window.refreshProjects = function() {
+        console.log('REFRESH: Manually refreshing projects...');
+        
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            const originalHTML = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i><span>Refreshing...</span>';
+            refreshBtn.disabled = true;
+            
+            loadProjectsFromFirebase().finally(function() {
+                refreshBtn.innerHTML = originalHTML;
+                refreshBtn.disabled = false;
+            });
+        } else {
+            loadProjectsFromFirebase();
+        }
+        
+        showProjectNotification('?? Refreshing projects...', 'info');
+    };
+
+
+    // Initialize when ready
+    initializeProjects();
+    
+    console.log('PROJECTS: Company Projects script loaded');
+
 })();

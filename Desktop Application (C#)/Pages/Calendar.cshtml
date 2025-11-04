@@ -347,12 +347,8 @@
                 if (events.length === 0) {
                     // Show empty calendar instead of empty state so users can still add events
                     initializeCalendar();
-                    showNotification('📅 Company calendar is empty! Click on any date to add an event.', 'info');
                 } else {
                     initializeCalendar();
-                    const myEventsCount = events.filter(e => e.userId === currentUser.uid).length;
-                    const teamEventsCount = events.length - myEventsCount;
-                    showNotification(`📅 Loaded ${events.length} company events (${myEventsCount} yours, ${teamEventsCount} team)`, 'success');
                 }
                 
                 updateCalendarStats();
@@ -363,11 +359,11 @@
                 // Show empty state if there's an error
                 showEmptyState();
                 
-                // Show user-friendly error message
+                // Show user-friendly error message only for critical errors
                 if (error.code === 'failed-precondition') {
-                    showNotification('ℹ️ Calendar loaded in simple mode. Some features may be limited.', 'info');
-                } else {
-                    showNotification('⚠️ Error loading events. Please try refreshing.', 'warning');
+                    // REMOVED: Info notification about simple mode
+                } else if (error.code === 'permission-denied') {
+                    showNotification('⚠️ Limited calendar access. You can view and edit only your events.', 'warning');
                 }
             } finally {
                 showLoadingState(false);
