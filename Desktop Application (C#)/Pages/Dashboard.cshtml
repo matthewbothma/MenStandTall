@@ -242,7 +242,7 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        console.log('📊 Dashboard script starting...');
+        console.log('Dashboard script starting...');
         
         var currentUser = null;
         var dashboardData = @Html.Raw(Json.Serialize(new { stats = Model.Stats, chartData = Model.ChartData }));
@@ -274,17 +274,17 @@
         
         // Setup dashboard-specific functionality
         function setupDashboard() {
-            console.log('📊 Setting up dashboard');
+            console.log('Setting up dashboard');
             
             if (!window.firebaseAuth) {
-                console.error('❌ Firebase auth not available in dashboard');
+                console.error('Firebase auth not available in dashboard');
                 return;
             }
             
             // Authentication check for dashboard
             window.firebaseAuth.onAuthStateChanged(function(user) {
                 if (!user) {
-                    console.log('❌ No user in dashboard, redirecting');
+                    console.log('No user in dashboard, redirecting');
                     window.location.href = '/';
                 } else {
                     currentUser = user;
@@ -292,16 +292,16 @@
                     
                     // Initialize charts first, then load data
                     initializeCharts().then(() => {
-                        console.log('📊 Charts initialized, now loading data...');
+                        console.log('Charts initialized, now loading data...');
                         return loadFirebaseData();
                     }).then(() => {
-                        console.log('📊 Data loaded, updating charts...');
+                        console.log('Data loaded, updating charts...');
                         updateChartsWithRealData(projectsData, tasksData, []);
                     });
                     
                     setupActivityTracking();
                     setupChartControls();
-                    console.log('✅ Dashboard user set:', user.email);
+                    console.log('Dashboard user set:', user.email);
                 }
             });
         }
@@ -335,26 +335,26 @@
         // Load Firebase data
         async function loadFirebaseData() {
             if (!window.firebaseDB || !currentUser) {
-                console.log('📊 Firebase DB or user not available yet');
+                console.log('Firebase DB or user not available yet');
                 return;
             }
             
             try {
-                console.log('📊 Loading real Firebase data...');
+                console.log('Loading real Firebase data...');
                 
                 // Load projects - try user-specific first to avoid permission errors
                 let projectsSnapshot;
                 try {
                     // Try to load all projects first (for company view)
                     projectsSnapshot = await window.firebaseDB.collection('projects').get();
-                    console.log('📊 Loaded all company projects successfully');
+                    console.log('Loaded all company projects successfully');
                 } catch (permissionError) {
-                    console.log('📊 Company-wide access denied, loading user projects only:', permissionError.message);
+                    console.log('Company-wide access denied, loading user projects only:', permissionError.message);
                     // Fallback to user-specific projects
                     projectsSnapshot = await window.firebaseDB.collection('projects')
                         .where('userId', '==', currentUser.uid)
                         .get();
-                    console.log('📊 Loaded user projects only');
+                    console.log('Loaded user projects only');
                 }
                 
                 // Load tasks - try user-specific to avoid permission issues
@@ -363,9 +363,9 @@
                     tasksSnapshot = await window.firebaseDB.collection('tasks')
                         .where('uid', '==', currentUser.uid)
                         .get();
-                    console.log('📊 Tasks loaded successfully:', tasksSnapshot.docs.length);
+                    console.log('Tasks loaded successfully:', tasksSnapshot.docs.length);
                 } catch (taskError) {
-                    console.log('📊 Tasks access error:', taskError.message);
+                    console.log('Tasks access error:', taskError.message);
                     // Create empty snapshot if tasks fail
                     tasksSnapshot = { docs: [] };
                 }
@@ -373,20 +373,20 @@
                 // Load events - user-specific - ENHANCED EVENT LOADING TO UNIVERSAL
                 let eventsSnapshot;
                 try {
-                    console.log('📊 Loading ALL company calendar events...');
+                    console.log('Loading ALL company calendar events...');
                     // Load ALL events for universal calendar widget
                     eventsSnapshot = await window.firebaseDB.collection('events').get();
-                    console.log('📊 Company events loaded successfully:', eventsSnapshot.docs.length);
+                    console.log('Company events loaded successfully:', eventsSnapshot.docs.length);
                 } catch (eventError) {
-                    console.log('📊 Company events access error, loading user events only:', eventError.message);
+                    console.log('Company events access error, loading user events only:', eventError.message);
                     // Fallback to user-specific events if permissions don't allow
                     try {
                         eventsSnapshot = await window.firebaseDB.collection('events')
                             .where('userId', '==', currentUser.uid)
                             .get();
-                        console.log('📊 User events loaded as fallback:', eventsSnapshot.docs.length);
+                        console.log('User events loaded as fallback:', eventsSnapshot.docs.length);
                     } catch (userEventError) {
-                        console.log('📊 User events also failed:', userEventError.message);
+                        console.log('User events also failed:', userEventError.message);
                         eventsSnapshot = { docs: [] };
                     }
                 }
@@ -394,7 +394,7 @@
                 // Load team members count
                 let teamMembersCount = 1; // At least current user
                 try {
-                    console.log('📊 Counting team members...');
+                    console.log('Counting team members...');
                     
                     // Try to get all users who have created projects (indicating active team members)
                     const allProjectsSnapshot = await window.firebaseDB.collection('projects').get();
@@ -426,14 +426,14 @@
                     });
                     
                     teamMembersCount = uniqueUserIds.size;
-                    console.log(`📊 Found ${teamMembersCount} active team members:`, Array.from(uniqueUserIds));
+                    console.log(`Found ${teamMembersCount} active team members:`, Array.from(uniqueUserIds));
                     
                 } catch (teamError) {
-                    console.log('📊 Team members access limited, showing current user only:', teamError.message);
+                    console.log('Team members access limited, showing current user only:', teamError.message);
                     teamMembersCount = 1; // Fallback to current user only
                 }
                 
-                console.log('📊 Firebase data loaded:', {
+                console.log('Firebase data loaded:', {
                     projects: projectsSnapshot.docs?.length || 0,
                     tasks: tasksSnapshot.docs?.length || 0,
                     events: eventsSnapshot.docs?.length || 0,
@@ -453,12 +453,12 @@
                 
                 // Log task data for debugging
                 if (tasksData.length > 0) {
-                    console.log('📊 Task status breakdown:', tasksData.map(t => ({ name: t.name, status: t.status })));
+                    console.log('Task status breakdown:', tasksData.map(t => ({ name: t.name, status: t.status })));
                 }
                 
                 // Log event data for debugging
                 if (eventsData.length > 0) {
-                    console.log('📊 Events breakdown:', eventsData.map(e => ({ 
+                    console.log('Events breakdown:', eventsData.map(e => ({ 
                         title: e.title, 
                         start: e.start,
                         startDate: new Date(e.start),
@@ -488,7 +488,7 @@
                 
                 const upcomingEvents = eventsData.filter(e => {
                     if (!e.start) {
-                        console.log('📊 Event missing start date:', e);
+                        console.log('Event missing start date:', e);
                         return false;
                     }
                     
@@ -504,7 +504,7 @@
                     const isIncluded = isHappeningNow || isUpcoming;
                     
                     if (isIncluded) {
-                        console.log('📊 Including event:', {
+                        console.log('Including event:', {
                             title: e.title,
                             start: e.start,
                             eventStart: eventStart.toLocaleString(),
@@ -516,7 +516,7 @@
                     return isIncluded;
                 });
                 
-                console.log('📊 Calculated stats:', {
+                console.log('Calculated stats:', {
                     activeProjects: activeProjects.length,
                     completedProjects: completedProjects.length,
                     completedTasks: completedTasks.length,
@@ -543,7 +543,7 @@
                 
                 // IMMEDIATELY UPDATE DONUT CHART AFTER DATA LOADS
                 if (chartsInitialized && taskDistributionChart) {
-                    console.log('📊 IMMEDIATELY updating donut chart with loaded data...');
+                    console.log('IMMEDIATELY updating donut chart with loaded data...');
                     
                     // Force immediate donut chart update
                     setTimeout(() => {
@@ -556,10 +556,10 @@
                     }, 500);
                 }
                 
-                console.log('✅ Real Firebase data loaded successfully');
+                console.log('Real Firebase data loaded successfully');
                 
             } catch (error) {
-                console.error('❌ Error loading Firebase data:', error);
+                console.error('Error loading Firebase data:', error);
                 
                 // If there's an error, show zeros instead of sample data
                 updateStatsUI({
@@ -573,9 +573,9 @@
         
         // NEW: Update calendar widget function
         function updateCalendarWidget(allEvents, upcomingEvents) {
-            console.log('📅 Updating calendar widget...');
-            console.log('📅 All events:', allEvents.length);
-            console.log('📅 Upcoming events:', upcomingEvents.length);
+            console.log('Updating calendar widget...');
+            console.log('All events:', allEvents.length);
+            console.log('Upcoming events:', upcomingEvents.length);
             
             // Update calendar title with current month/year
             const now = new Date();
@@ -595,7 +595,7 @@
             // Update upcoming events list
             updateUpcomingEventsList(upcomingEvents);
             
-            console.log('📅 Calendar widget updated successfully');
+            console.log('Calendar widget updated successfully');
         }
         
         // Generate calendar days
@@ -657,7 +657,7 @@
             const eventsListEl = document.getElementById('eventsList');
             if (!eventsListEl) return;
             
-            console.log('📅 Updating events list with:', upcomingEvents.length, 'events');
+            console.log('Updating events list with:', upcomingEvents.length, 'events');
             
             if (upcomingEvents.length === 0) {
                 eventsListEl.innerHTML = `
@@ -717,7 +717,6 @@
                 
                 // Add visual indicator for my events vs team events
                 const eventClass = isMyEvent ? 'my-event' : 'team-event';
-                const eventIcon = isMyEvent ? '✓' : '👥';
                 const eventAuthor = isMyEvent ? 'You' : authorName;
                 
                 eventsHtml += `
@@ -725,7 +724,7 @@
                         <div class="event-dot ${getPriorityClass(event.priority)}"></div>
                         <div class="event-info">
                             <div class="event-title">
-                                ${eventIcon} ${escapeHtml(event.title)}
+                                 ${escapeHtml(event.title)}
                             </div>
                             <div class="event-time">
                                 ${timeText}${!event.allDay ? ` at ${eventTime}` : ''} • ${eventAuthor}
@@ -748,7 +747,7 @@
             
             eventsListEl.innerHTML = eventsHtml;
             
-            console.log('📅 Events list updated with universal events and author indicators');
+            console.log('Events list updated with universal events and author indicators');
         }
         
         // Helper functions for calendar
@@ -769,7 +768,7 @@
         
         // NEW: Update recent activity function
         function updateRecentActivity(projects, tasks, events) {
-            console.log('📝 Updating recent activity...');
+            console.log('Updating recent activity...');
             
             const recentActivitiesEl = document.getElementById('recent-activities');
             if (!recentActivitiesEl) return;
@@ -892,7 +891,7 @@
             // Take only the most recent 10 activities
             const recentActivities = activities.slice(0, 10);
             
-            console.log('📝 Recent activities:', recentActivities.length);
+            console.log('Recent activities:', recentActivities.length);
             
             // Display activities
             if (recentActivities.length === 0) {
@@ -931,7 +930,7 @@
             
             recentActivitiesEl.innerHTML = activitiesHtml;
             
-            console.log('📝 Recent activities updated successfully');
+            console.log('Recent activities updated successfully');
         }
         
         // Get time ago string
@@ -959,11 +958,11 @@
         // NEW: Force donut chart update function
         function forceDonutChartUpdate(tasks, projects) {
             if (!taskDistributionChart) {
-                console.log('📊 Cannot force donut update - chart not ready');
+                console.log('Cannot force donut update - chart not ready');
                 return;
             }
             
-            console.log('🍩 FORCING immediate donut chart update...');
+            console.log('FORCING immediate donut chart update...');
             
             // Calculate task data
             const todoCount = tasks.filter(t => {
@@ -986,7 +985,7 @@
                 return status === 'review' || status === 'testing' || status === 'pending review';
             }).length;
             
-            console.log('🍩 Calculated task counts:', { todoCount, doingCount, doneCount, reviewCount });
+            console.log('Calculated task counts:', { todoCount, doingCount, doneCount, reviewCount });
             
             // Update chart immediately
             taskDistributionChart.data.labels = ['Completed', 'In Progress', 'To Do', 'Review'];
@@ -1000,7 +999,7 @@
             
             // Force update without animation for immediate display
             taskDistributionChart.update('none');
-            console.log('🍩 Donut chart FORCED update completed!');
+            console.log('Donut chart FORCED update completed!');
         }
         
         // Update stats UI
@@ -1045,15 +1044,15 @@
         
         // Update charts with real data
         function updateChartsWithRealData(projects, tasks, completedProjects) {
-            console.log('📊 Updating charts with real data...');
-            console.log('📊 Chart initialization status:', {
+            console.log('Updating charts with real data...');
+            console.log('Chart initialization status:', {
                 projectProgressChart: !!projectProgressChart,
                 taskDistributionChart: !!taskDistributionChart,
                 chartsInitialized: chartsInitialized
             });
             
             if (!chartsInitialized) {
-                console.log('📊 Charts not initialized yet, waiting...');
+                console.log('Charts not initialized yet, waiting...');
                 setTimeout(() => updateChartsWithRealData(projects, tasks, completedProjects), 500);
                 return;
             }
@@ -1062,7 +1061,7 @@
             updateProjectProgressChart(projects, currentPeriod);
             
             // Update task/project distribution chart - FORCE UPDATE
-            console.log('📊 About to update distribution chart with:', {
+            console.log('About to update distribution chart with:', {
                 tasksCount: tasks.length,
                 projectsCount: projects.length,
                 chartViewMode: chartViewMode
@@ -1072,27 +1071,27 @@
             
             // Force additional updates to ensure chart displays
             setTimeout(() => {
-                console.log('📊 Forcing additional chart update...');
+                console.log('Forcing additional chart update...');
                 forceChartUpdate(tasks, projects);
             }, 300);
             
-            console.log('✅ Charts updated with real data');
+            console.log('Charts updated with real data');
         }
         
         // NEW: Force chart update function
         function forceChartUpdate(tasks, projects) {
             if (!taskDistributionChart || !chartsInitialized) {
-                console.log('📊 Cannot force update - chart not ready');
+                console.log('Cannot force update - chart not ready');
                 return;
             }
             
-            console.log('🔧 Forcing chart update with current data...');
+            console.log('Forcing chart update with current data...');
             
             // Set the dropdown to match current mode
             const viewSelector = document.getElementById('chartViewSelector');
             if (viewSelector && viewSelector.value !== chartViewMode) {
                 viewSelector.value = chartViewMode;
-                console.log('🔧 Updated dropdown to match chartViewMode:', chartViewMode);
+                console.log('Updated dropdown to match chartViewMode:', chartViewMode);
             }
             
             // Calculate data based on current mode
@@ -1152,7 +1151,7 @@
                 newLabels = ['Completed', 'Active', 'Planning', 'On Hold'];
                 newColors = ['#10b981', '#ff6b35', '#94a3b8', '#ef4444'];
                 
-                console.log('🔧 Project data for force update:', { planningCount, activeCount, completedCount, onholdCount });
+                console.log('Project data for force update:', { planningCount, activeCount, completedCount, onholdCount });
             }
             
             // Apply new data
@@ -1163,17 +1162,17 @@
             // Force update without animation
             taskDistributionChart.update('none');
             
-            console.log('🔧 Force update completed with data:', newData);
+            console.log('Force update completed with data:', newData);
         }
         
         // Update project progress chart
         function updateProjectProgressChart(projects, period) {
             if (!projectProgressChart) {
-                console.log('📊 Project progress chart not initialized');
+                console.log('Project progress chart not initialized');
                 return;
             }
             
-            console.log('📈 Updating project progress chart for period:', period);
+            console.log('Updating project progress chart for period:', period);
             
             // Generate labels for the time period
             const labels = [];
@@ -1230,7 +1229,7 @@
             const finalLabels = validLabels.slice(0, Math.min(validLabels.length, validData.length));
             const finalData = validData.slice(0, Math.min(validLabels.length, validData.length));
             
-            console.log('📈 Chart data prepared:', {
+            console.log('Chart data prepared:', {
                 finalLabels,
                 finalData,
                 originalLabelsLength: labels.length,
@@ -1259,10 +1258,10 @@
                 
                 // Update with error handling
                 projectProgressChart.update('active');
-                console.log('📈 Project progress chart updated successfully');
+                console.log('Project progress chart updated successfully');
                 
             } catch (error) {
-                console.error('📈 Error updating project progress chart:', error);
+                console.error('Error updating project progress chart:', error);
                 // Fallback: create simple data structure
                 projectProgressChart.data.labels = ['No Data'];
                 projectProgressChart.data.datasets[0].data = [0];
@@ -1273,12 +1272,12 @@
         // Update distribution chart (tasks or projects)
         function updateDistributionChart(tasks, projects) {
             if (!taskDistributionChart) {
-                console.log('📊 Task distribution chart not initialized');
+                console.log('Task distribution chart not initialized');
                 return;
             }
             
-            console.log('🍩 Updating distribution chart, mode:', chartViewMode);
-            console.log('🍩 Tasks data:', tasks.length, 'Projects data:', projects.length);
+            console.log('Updating distribution chart, mode:', chartViewMode);
+            console.log('Tasks data:', tasks.length, 'Projects data:', projects.length);
             
             if (chartViewMode === 'tasks') {
                 // Task distribution - ENHANCED DEBUGGING
@@ -1288,7 +1287,7 @@
                     statusLower: t.status?.toLowerCase()
                 }));
                 
-                console.log('🍩 All tasks with status:', allTasks);
+                console.log('All tasks with status:', allTasks);
                 
                 const todoCount = tasks.filter(t => {
                     const status = t.status?.toLowerCase();
@@ -1310,7 +1309,7 @@
                     return status === 'review' || status === 'testing' || status === 'pending review';
                 }).length;
                 
-                console.log('🍩 Task distribution calculated:', {
+                console.log('Task distribution calculated:', {
                     todoCount,
                     doingCount,
                     doneCount,
@@ -1342,7 +1341,7 @@
                     statusLower: p.status?.toLowerCase()
                 }));
                 
-                console.log('🍩 All projects with status:', allProjects);
+                console.log('All projects with status:', allProjects);
                 
                 const planningCount = projects.filter(p => {
                     const status = p.status?.toLowerCase();
@@ -1364,7 +1363,7 @@
                     return status === 'onhold' || status === 'on hold' || status === 'paused';
                 }).length;
                 
-                console.log('🍩 Project distribution calculated:', {
+                console.log('Project distribution calculated:', {
                     planningCount,
                     activeCount,
                     completedCount,
@@ -1390,13 +1389,13 @@
             }
             
             // FORCE CHART UPDATE - Multiple attempts to ensure rendering
-            console.log('🍩 Forcing chart update with data:', taskDistributionChart.data.datasets[0].data);
+            console.log('Forcing chart update with data:', taskDistributionChart.data.datasets[0].data);
             
             // Destroy and recreate the chart if data is empty
             const hasData = taskDistributionChart.data.datasets[0].data.some(value => value > 0);
             
             if (!hasData) {
-                console.log('🍩 No data found, showing empty state...');
+                console.log('No data found, showing empty state...');
                 // Show placeholder data to make chart visible
                 taskDistributionChart.data.datasets[0].data = [1, 0, 0, 0];
                 taskDistributionChart.data.labels = ['No Data Available'];
@@ -1408,7 +1407,7 @@
             
             setTimeout(() => {
                 taskDistributionChart.update('none');
-                console.log('🍩 Chart updated again after delay');
+                console.log('Chart updated again after delay');
             }, 200);
             
             setTimeout(() => {
@@ -1471,7 +1470,7 @@
                 }
             }, 500);
             
-            console.log('🍩 Distribution chart updated for:', chartViewMode, 'with final data:', taskDistributionChart.data.datasets[0].data);
+            console.log('Distribution chart updated for:', chartViewMode, 'with final data:', taskDistributionChart.data.datasets[0].data);
         }
         
         // Setup activity tracking
@@ -1479,7 +1478,7 @@
             // Listen for task events for real-time updates
             if (typeof window !== 'undefined') {
                 window.addEventListener('taskUpdated', function(event) {
-                    console.log('📊 Task updated, refreshing dashboard...', event.detail);
+                    console.log('Task updated, refreshing dashboard...', event.detail);
                     setTimeout(() => {
                         loadFirebaseData().then(() => {
                             if (chartsInitialized && dataLoaded) {
@@ -1490,7 +1489,7 @@
                 });
                 
                 window.addEventListener('calendarEventSaved', function(event) {
-                    console.log('📊 Calendar event saved, refreshing dashboard...');
+                    console.log('Calendar event saved, refreshing dashboard...');
                     setTimeout(() => {
                         loadFirebaseData().then(() => {
                             if (chartsInitialized && dataLoaded) {
@@ -1501,7 +1500,7 @@
                 });
                 
                 window.addEventListener('calendarEventUpdated', function(event) {
-                    console.log('📊 Calendar event updated, refreshing dashboard...');
+                    console.log('Calendar event updated, refreshing dashboard...');
                     setTimeout(() => {
                         loadFirebaseData().then(() => {
                             if (chartsInitialized && dataLoaded) {
@@ -1512,7 +1511,7 @@
                 });
                 
                 window.addEventListener('calendarEventDeleted', function(event) {
-                    console.log('📊 Calendar event deleted, refreshing dashboard...');
+                    console.log('Calendar event deleted, refreshing dashboard...');
                     setTimeout(() => {
                         loadFirebaseData().then(() => {
                             if (chartsInitialized && dataLoaded) {
@@ -1523,7 +1522,7 @@
                 });
                 
                 window.addEventListener('projectUpdated', function(event) {
-                    console.log('📊 Project updated, refreshing dashboard...', event.detail);
+                    console.log('Project updated, refreshing dashboard...', event.detail);
                     setTimeout(() => {
                         loadFirebaseData().then(() => {
                             if (chartsInitialized && dataLoaded) {
@@ -1535,7 +1534,7 @@
                 
                 // NEW: Listen for project created event
                 window.addEventListener('projectCreated', function(event) {
-                    console.log('📊 Project created, refreshing dashboard...', event.detail);
+                    console.log('Project created, refreshing dashboard...', event.detail);
                     setTimeout(() => {
                         loadFirebaseData();
                     }, 1000);
@@ -1543,7 +1542,7 @@
                 
                 // NEW: Listen for project deleted event
                 window.addEventListener('projectDeleted', function(event) {
-                    console.log('📊 Project deleted, refreshing dashboard...', event.detail);
+                    console.log('Project deleted, refreshing dashboard...', event.detail);
                     setTimeout(() => {
                         loadFirebaseData();
                     }, 1000);
@@ -1551,7 +1550,7 @@
                 
                 // NEW: Listen for task created event
                 window.addEventListener('taskCreated', function(event) {
-                    console.log('📊 Task created, refreshing dashboard...', event.detail);
+                    console.log('Task created, refreshing dashboard...', event.detail);
                     setTimeout(() => {
                         loadFirebaseData();
                     }, 1000);
@@ -1559,14 +1558,14 @@
                 
                 // NEW: Listen for task deleted event
                 window.addEventListener('taskDeleted', function(event) {
-                    console.log('📊 Task deleted, refreshing dashboard...', event.detail);
+                    console.log('Task deleted, refreshing dashboard...', event.detail);
                     setTimeout(() => {
                         loadFirebaseData();
                     }, 1000);
                 });
             }
             
-            console.log('✅ Activity tracking setup complete');
+            console.log('Activity tracking setup complete');
         }
         
         // Setup chart controls
@@ -1581,7 +1580,7 @@
                     this.classList.add('active');
                     
                     currentPeriod = parseInt(this.getAttribute('data-period'));
-                    console.log('📊 Period changed to:', currentPeriod);
+                    console.log('Period changed to:', currentPeriod);
                     
                     // Update project progress chart
                     if (projectsData.length >= 0 && chartsInitialized) {
@@ -1596,11 +1595,11 @@
                 viewSelector.addEventListener('change', function() {
                     const oldMode = chartViewMode;
                     chartViewMode = this.value;
-                    console.log('📊 Chart view mode changed from', oldMode, 'to:', chartViewMode);
+                    console.log('Chart view mode changed from', oldMode, 'to:', chartViewMode);
                     
                     // Update distribution chart immediately
                     if (chartsInitialized && (tasksData.length > 0 || projectsData.length > 0)) {
-                        console.log('📊 Updating chart due to view selector change...');
+                        console.log('Updating chart due to view selector change...');
                         updateDistributionChart(tasksData, projectsData);
                     }
                 });
@@ -1610,7 +1609,7 @@
         // Initialize charts - return promise for proper sequencing
         function initializeCharts() {
             return new Promise((resolve) => {
-                console.log('📊 Initializing charts...');
+                console.log('Initializing charts...');
                 
                 try {
                     // Project Progress Chart - with safer initialization
@@ -1665,10 +1664,10 @@
                                 }
                             }
                         });
-                        console.log('📊 Project progress chart initialized');
+                        console.log('Project progress chart initialized');
                     }
                 } catch (error) {
-                    console.error('📊 Error initializing project progress chart:', error);
+                    console.error('Error initializing project progress chart:', error);
                 }
                 
                 try {
@@ -1712,28 +1711,28 @@
                                 }
                             }
                         });
-                        console.log('📊 Task distribution chart initialized');
+                        console.log('Task distribution chart initialized');
                         
                         // Force initial rendering to make chart visible
                         setTimeout(() => {
-                            console.log('📊 Setting initial chart to show structure...');
+                            console.log('Setting initial chart to show structure...');
                             taskDistributionChart.update('none');
                         }, 100);
                         
                     }
                 } catch (error) {
-                    console.error('📊 Error initializing task distribution chart:', error);
+                    console.error('Error initializing task distribution chart:', error);
                 }
                 
                 // Set flag and resolve
                 chartsInitialized = true;
-                console.log('✅ Charts initialized successfully');
+                console.log('Charts initialized successfully');
                 
                 // Small delay to ensure DOM is ready, then force donut chart update
                 setTimeout(() => {
                     // Immediately try to update the donut chart with placeholder data
                     if (taskDistributionChart) {
-                        console.log('📊 Forcing initial donut chart display...');
+                        console.log('Forcing initial donut chart display...');
                         taskDistributionChart.data.datasets[0].data = [1, 1, 1, 1];
                         taskDistributionChart.update('none');
                     }
@@ -1753,7 +1752,7 @@
         
         // Refresh dashboard
         function refreshDashboard() {
-            console.log('🔄 Refreshing dashboard...');
+            console.log('Refreshing dashboard...');
             loadFirebaseData().then(() => {
                 if (chartsInitialized && dataLoaded) {
                     updateChartsWithRealData(projectsData, tasksData, []);
@@ -1763,7 +1762,7 @@
         
         // Calendar navigation (placeholder functions)
         function previousMonth() {
-            console.log('📅 Previous month clicked');
+            console.log('Previous month clicked');
             if (currentCalendarDate && eventsData) {
                 currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
                 const upcomingEvents = eventsData.filter(e => {
@@ -1781,7 +1780,7 @@
         }
         
         function nextMonth() {
-            console.log('📅 Next month clicked');
+            console.log('Next month clicked');
             if (currentCalendarDate && eventsData) {
                 currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
                 const upcomingEvents = eventsData.filter(e => {
@@ -1888,13 +1887,13 @@
         
         // Initialize everything when Firebase is ready
         waitForDashboardFirebase(function() {
-            console.log('✅ Firebase ready for dashboard');
+            console.log('Firebase ready for dashboard');
             setupDashboard();
             loadActivityCollapseState(); // Load collapse state
             loadCalendarCollapseState(); // Load calendar collapse state
-            console.log('✅ Dashboard setup complete');
+            console.log('Dashboard setup complete');
         });
         
-        console.log('📊 Dashboard script loaded');
+        console.log('Dashboard script loaded');
     </script>
 }
