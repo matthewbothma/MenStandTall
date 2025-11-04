@@ -43,7 +43,7 @@ jobs:
       run: dotnet publish "Desktop Application (C#)/Wilproject.csproj" --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --output ./deploy
       
     - name: Upload Deployment Package
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: deployment-package-${{ github.run_number }}
         path: ./deploy
