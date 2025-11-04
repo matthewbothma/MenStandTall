@@ -15,7 +15,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include=".github\scripts\" />
     <Folder Include="libs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include=".github\dependabot.yml" />
+    <None Include=".github\workflows\cd.yml" />
+    <None Include=".github\workflows\ci.yml" />
+    <None Include=".github\workflows\dashboard.yml" />
+    <None Include=".github\workflows\pr-validation.yml" />
   </ItemGroup>
 
 </Project>

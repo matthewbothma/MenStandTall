@@ -1,0 +1,88 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  validate:
+    name: Validate Pull Request
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Restore dependencies
+      run: dotnet restore "Desktop Application (C#)/Wilproject.csproj"
+      
+    - name: Build
+      run: dotnet build "Desktop Application (C#)/Wilproject.csproj" --configuration Debug --no-restore
+      
+    - name: Run Tests
+      run: dotnet test TestWILProject/TestWILProject.csproj --configuration Debug --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      
+    - name: Code Coverage Report
+      uses: irongut/CodeCoverageSummary@v1.3.0
+      with:
+        filename: '**/coverage.cobertura.xml'
+        badge: true
+        fail_below_min: false
+        format: markdown
+        hide_branch_rate: false
+        hide_complexity: false
+        indicators: true
+        output: both
+        thresholds: '60 80'
+      continue-on-error: true
+      
+    - name: Add Coverage PR Comment
+      uses: marocchino/sticky-pull-request-comment@v2
+      if: github.event_name == 'pull_request'
+      with:
+        recreate: true
+        path: code-coverage-results.md
+      continue-on-error: true
+      
+    - name: Lint Check
+      run: dotnet format "Desktop Application (C#)/Wilproject.csproj" --verify-no-changes --verbosity diagnostic
+      continue-on-error: true
+      
+    - name: Check for TODOs
+      run: |
+        echo "Checking for TODO comments..."
+        grep -r "TODO" "Desktop Application (C#)" --exclude-dir=bin --exclude-dir=obj --exclude-dir=node_modules || echo "No TODOs found"
+      continue-on-error: true
+
+  size-check:
+    name: Check Build Size
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Publish
+      run: dotnet publish "Desktop Application (C#)/Wilproject.csproj" --configuration Release --output ./output
+      
+    - name: Calculate Size
+      run: |
+        SIZE=$(du -sh ./output | cut -f1)
+        echo "Published application size: $SIZE"
+        echo "BUILD_SIZE=$SIZE" >> $GITHUB_ENV
