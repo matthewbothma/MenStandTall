@@ -30,7 +30,7 @@
                     android:id="@+id/tvGreeting"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Good Evening, Matthew Bothma!"
+                    android:text="Welcome"
                     android:textColor="#FFFFFF"
                     android:textSize="24sp"
                     android:textStyle="bold" />
@@ -223,7 +223,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="UPCOMING EVENTS"
+                        android:text="UPCOMING PROJECTS"
                         android:textColor="#718096"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -312,7 +312,15 @@
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn123Project"
+            android:layout_width="0dp"
+            android:layout_height="70dp"
+            android:backgroundTint="#FF8C69"
+            android:text="New Project"
+            app:icon="@drawable/ic_add"
+            app:iconGravity="textStart" />
     </LinearLayout>
+
 </ScrollView>
 

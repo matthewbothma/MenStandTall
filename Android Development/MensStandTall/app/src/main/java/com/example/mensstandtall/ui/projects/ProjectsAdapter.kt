@@ -1,9 +1,9 @@
 package com.example.mensstandtall.ui.projects
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
+import android.widget.Toast
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -14,7 +14,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class ProjectsAdapter(
-    private val onUpdateStatus: (Project, String) -> Unit
+    private val onUpdateStatus: (Project, String) -> Unit,
+    private val onDeleteProject: (Project) -> Unit
 ) : ListAdapter<Project, ProjectsAdapter.ProjectViewHolder>(ProjectDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProjectViewHolder {
@@ -47,18 +48,42 @@ class ProjectsAdapter(
             }
             binding.tvProjectStatus.setTextColor(statusColor)
 
-            // Remove delete, only handle status
+            // ✅ Popup menu (status change + delete)
             binding.ivMenu.setOnClickListener {
-                val statuses = arrayOf("Active", "Completed", "On Hold")
-                androidx.appcompat.app.AlertDialog.Builder(binding.root.context)
-                    .setTitle("Change Status")
-                    .setItems(statuses) { _, index ->
-                        val newStatus = statuses[index]
-                        if (newStatus != project.status) {
-                            onUpdateStatus(project, newStatus)
+                val popup = PopupMenu(binding.root.context, binding.ivMenu)
+                popup.menuInflater.inflate(R.menu.project_item_menu, popup.menu)
+
+                popup.setOnMenuItemClickListener { item ->
+                    when (item.itemId) {
+                        R.id.action_edit_status_active -> {
+                            if (project.status != "Active") onUpdateStatus(project, "Active")
+                            true
                         }
+                        R.id.action_edit_status_completed -> {
+                            if (project.status != "Completed") onUpdateStatus(project, "Completed")
+                            true
+                        }
+                        R.id.action_edit_status_on_hold -> {
+                            if (project.status != "On Hold") onUpdateStatus(project, "On Hold")
+                            true
+                        }
+                        R.id.action_delete -> {
+                            // Confirm delete
+                            androidx.appcompat.app.AlertDialog.Builder(binding.root.context)
+                                .setTitle("Delete Project")
+                                .setMessage("Are you sure you want to delete '${project.name}'?")
+                                .setPositiveButton("Delete") { _, _ ->
+                                    onDeleteProject(project)
+                                }
+                                .setNegativeButton("Cancel", null)
+                                .show()
+                            true
+                        }
+                        else -> false
                     }
-                    .show()
+                }
+
+                popup.show()
             }
         }
     }
@@ -68,5 +93,6 @@ class ProjectsAdapter(
         override fun areContentsTheSame(oldItem: Project, newItem: Project) = oldItem == newItem
     }
 }
+
 
 

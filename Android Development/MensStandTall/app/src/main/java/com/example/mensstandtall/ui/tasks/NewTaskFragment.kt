@@ -98,7 +98,7 @@ class NewTaskFragment : Fragment() {
             status = status,
             priority = priority,
             projectId = projectId,
-            deadline = deadlineString,
+            dueDate = deadlineString, // ✅ must match model
             createdAt = sdf.format(Date()),
             updatedAt = sdf.format(Date()),
         )

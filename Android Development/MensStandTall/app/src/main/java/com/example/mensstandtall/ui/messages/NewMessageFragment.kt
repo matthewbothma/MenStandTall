@@ -11,6 +11,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.mensstandtall.databinding.FragmentNewMessageBinding
 import com.example.mensstandtall.models.Message
+import com.example.mensstandtall.repository.AuthRepository
 import kotlinx.coroutines.launch
 
 class NewMessageFragment : Fragment() {
@@ -26,6 +27,8 @@ class NewMessageFragment : Fragment() {
         _binding = FragmentNewMessageBinding.inflate(inflater, container, false)
         return binding.root
     }
+
+    private val authRepository = AuthRepository()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -63,14 +66,19 @@ class NewMessageFragment : Fragment() {
                 return@setOnClickListener
             }
 
+            val currentUser = authRepository.currentUser
+
+            val authorName = currentUser?.displayName ?: "User"
+            val authorEmail = currentUser?.email ?: "unknown@example.com"
+
             val message = Message(
                 title = title,
                 content = content,
                 category = category,
                 priority = priority,
                 status = status,
-                authorName = "Anonymous", // Replace with logged-in user later
-                authorEmail = "unknown@example.com"
+                authorName = authorName,
+                authorEmail = authorEmail
             )
 
             binding.progressBar.visibility = View.VISIBLE

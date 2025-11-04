@@ -43,6 +43,16 @@ class ProjectsFragment : Fragment() {
                         Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
+            },
+            onDeleteProject = { project ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val result = viewModel.deleteProject(project)
+                    result.onSuccess {
+                        Toast.makeText(requireContext(), "Project deleted", Toast.LENGTH_SHORT).show()
+                    }.onFailure { e ->
+                        Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
             }
         )
 
