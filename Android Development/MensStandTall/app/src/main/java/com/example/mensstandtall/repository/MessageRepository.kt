@@ -14,6 +14,7 @@ class MessageRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val messagesCollection = firestore.collection("messages")
 
+    // ✅ Get messages in real-time
     fun getMessages(): Flow<List<Message>> = callbackFlow {
         val listener = messagesCollection
             .orderBy("timestamp", Query.Direction.DESCENDING)
@@ -23,26 +24,53 @@ class MessageRepository {
                     return@addSnapshotListener
                 }
 
-                val list = snapshot?.documents?.mapNotNull {
+                val messages = snapshot?.documents?.mapNotNull {
                     it.toObject(Message::class.java)?.copy(id = it.id)
                 } ?: emptyList()
 
-                trySend(list)
+                trySend(messages)
             }
 
         awaitClose { listener.remove() }
     }
 
+    // ✅ Add a new message
     suspend fun addMessage(message: Message): Result<String> {
         return try {
             val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
             val now = sdf.format(Date())
 
-            val newMsg = message.copy(timestamp = now)
-            val doc = messagesCollection.add(newMsg).await()
-            Result.success(doc.id)
+            val newMessage = message.copy(
+                timestamp = now,
+                status = "sent",
+                read = false
+            )
+
+            val docRef = messagesCollection.add(newMessage).await()
+            Result.success(docRef.id)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ✅ Mark message as read or update fields
+    suspend fun updateMessage(messageId: String, updates: Map<String, Any>): Result<Unit> {
+        return try {
+            messagesCollection.document(messageId).update(updates).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ✅ Delete a message
+    suspend fun deleteMessage(messageId: String): Result<Unit> {
+        return try {
+            messagesCollection.document(messageId).delete().await()
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 }
+

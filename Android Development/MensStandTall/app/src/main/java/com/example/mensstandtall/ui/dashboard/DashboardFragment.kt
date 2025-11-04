@@ -12,6 +12,7 @@ import androidx.navigation.fragment.findNavController
 import com.example.mensstandtall.R
 import com.example.mensstandtall.databinding.FragmentDashboardBinding
 import com.example.mensstandtall.repository.AuthRepository
+import com.google.firebase.firestore.FirebaseFirestore
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
@@ -23,6 +24,7 @@ class DashboardFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var viewModel: DashboardViewModel
     private val authRepository = AuthRepository()
+    private val firestore = FirebaseFirestore.getInstance()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -54,16 +56,25 @@ class DashboardFragment : Fragment() {
 
     private fun setupUserGreeting() {
         val currentUser = authRepository.currentUser
-        val displayName = currentUser?.displayName ?: "User"
 
-        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-        val greeting = when (hour) {
-            in 0..11 -> "Good Morning"
-            in 12..16 -> "Good Afternoon"
-            else -> "Good Evening"
+        if (currentUser == null) {
+            binding.tvGreeting.text = "Welcome to your dashboard!"
+            return
         }
 
-        binding.tvGreeting.text = "$greeting, $displayName!"
+        // Try to load from Firestore to ensure display name is correct
+        firestore.collection("users").document(currentUser.uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                val displayName = doc.getString("displayName") ?: currentUser.displayName ?: "User"
+
+                // Always use "Welcome" instead of time-based greeting
+                binding.tvGreeting.text = "Welcome, $displayName!"
+            }
+            .addOnFailureListener {
+                val fallbackName = currentUser.displayName ?: "User"
+                binding.tvGreeting.text = "Welcome, $fallbackName!"
+            }
     }
 
     private fun observeData() {
@@ -72,7 +83,7 @@ class DashboardFragment : Fragment() {
                 binding.tvActiveProjects.text = stats.activeProjects.toString()
                 binding.tvCompletedTasks.text = stats.completedTasks.toString()
                 binding.tvTeamMembers.text = stats.teamMembers.toString()
-                binding.tvUpcomingEvents.text = stats.upcomingProjects.toString() // updated
+                binding.tvUpcomingEvents.text = stats.upcomingProjects.toString()
 
                 updateTaskDistributionChart(stats)
             }
@@ -105,15 +116,14 @@ class DashboardFragment : Fragment() {
             return
         }
 
-        if (stats.completedTasksCount > 0) {
+        if (stats.completedTasksCount > 0)
             entries.add(PieEntry(stats.completedTasksCount.toFloat(), "Completed"))
-        }
-        if (stats.inProgressTasksCount > 0) {
+
+        if (stats.inProgressTasksCount > 0)
             entries.add(PieEntry(stats.inProgressTasksCount.toFloat(), "In Progress"))
-        }
-        if (stats.todoTasksCount > 0) {
+
+        if (stats.todoTasksCount > 0)
             entries.add(PieEntry(stats.todoTasksCount.toFloat(), "To Do"))
-        }
 
         val dataSet = PieDataSet(entries, "").apply {
             colors = listOf(
@@ -135,5 +145,6 @@ class DashboardFragment : Fragment() {
         _binding = null
     }
 }
+
 
 

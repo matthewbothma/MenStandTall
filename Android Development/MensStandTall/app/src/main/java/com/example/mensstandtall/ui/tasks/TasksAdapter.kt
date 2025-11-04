@@ -39,12 +39,12 @@ class TasksAdapter(
             binding.tvTaskPriority.text = task.priority
 
             val dateFormat = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
-            val deadlineText = if (task.deadline.isNotEmpty()) {
+            val deadlineText = if (task.dueDate.isNotEmpty()) {
                 try {
                     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                    dateFormat.format(sdf.parse(task.deadline)!!)
+                    dateFormat.format(sdf.parse(task.dueDate)!!)
                 } catch (e: Exception) {
-                    task.deadline
+                    task.dueDate
                 }
             } else "No deadline"
             binding.tvDueDate.text = "Due: $deadlineText"
